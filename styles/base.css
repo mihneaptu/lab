@@ -166,6 +166,13 @@ a:focus-visible {
    link to the repo, clickable once revealed; the resets keep it looking
    like part of the wordmark rather than a control. */
 .wordmark .octo {
+  /* The cat's open width, defined once, here on the element both
+     consumers can see: the hover rule below opens the window to it, and
+     scripts/octo-stars.js reads it to anchor the star corridor just past
+     the cat. Keep it an em multiple; the script scales it by this
+     element's own font size to land in pixels. */
+  --octo-open: 1.3em;
+
   align-self: center; /* the logo is centered on the text, not baseline-set */
   position: relative; /* lifts the cat above the hold box so it stays clickable */
   background: none;
@@ -261,7 +268,7 @@ a:focus-visible {
 }
 
 .wordmark:has(a:first-child:hover, .tick:hover, .octo:hover, .octo:focus-visible, .octo-hold:hover) .octo {
-  max-width: 1.3em;
+  max-width: var(--octo-open);
   /* exit timing: opens while the last letter is still being swallowed —
      overlapping the stages is what keeps the act tight without losing
      the story */

@@ -36,7 +36,15 @@ if (octo && sky) {
        with offsetLeft/offsetWidth, which ignore the tick's little
        rotation. Recomputed each show, so resizes are picked up too. */
     const tick = sky.parentElement.querySelector(".tick");
-    const catWidth = 1.3 * parseFloat(getComputedStyle(octo).fontSize);
+    /* The cat's open width comes from --octo-open in base.css, which is
+       also what the hover rule opens to. Read rather than repeated: a
+       literal here would be a second copy of the number, free to drift
+       the day the logo is resized. It's an em multiple, so scale it by
+       the cat's own font size to get pixels. */
+    const catStyle = getComputedStyle(octo);
+    const catWidth =
+      parseFloat(catStyle.getPropertyValue("--octo-open")) *
+      parseFloat(catStyle.fontSize);
     sky.style.left = tick.offsetLeft + tick.offsetWidth + catWidth + "px";
 
     let lastLanding = 0;
