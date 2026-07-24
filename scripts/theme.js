@@ -17,7 +17,33 @@ const calmMotion = matchMedia("(prefers-reduced-motion: reduce)");
    the data-theme attribute this script flips). If a page ever wants a
    text label again, it goes in a .tt-label span so writing it can't
    wipe out the svg. */
-const label = toggle.querySelector(".tt-label");
+const label = toggle?.querySelector(".tt-label") ?? null;
+
+/* A page may legitimately have no button: the sun-moon exhibit IS the
+   switch, so a second one in the corner would be a duplicate control.
+   Only the click wiring depends on the toggle. Everything below it —
+   the bfcache and background-tab re-sync — is worth running anywhere
+   the theme can change under the page's feet, so it stays unguarded. */
+
+/* Storage can be unavailable, not just empty: a blocked third-party
+   context or a locked-down profile throws on access rather than
+   returning null. Reading the theme is a nice-to-have, so swallow it
+   and fall back to whatever the document already wears. */
+function readSavedTheme() {
+  try {
+    return localStorage.getItem("theme");
+  } catch {
+    return null;
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    localStorage.setItem("theme", theme);
+  } catch {
+    /* The flip still applies to this page; it just won't outlive it. */
+  }
+}
 
 function updateLabel() {
   if (label) {
@@ -27,7 +53,7 @@ function updateLabel() {
 
 function applyTheme(theme) {
   root.dataset.theme = theme;
-  localStorage.setItem("theme", theme);
+  saveTheme(theme);
   updateLabel();
 }
 
@@ -207,7 +233,7 @@ function animateThemeReveal(transition, x, y, radius) {
   });
 }
 
-toggle.addEventListener("click", () => {
+toggle?.addEventListener("click", () => {
   const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
   settleThemedTransitions();
 
@@ -267,7 +293,7 @@ window.addEventListener("pagehide", prepareForSuspension);
 window.addEventListener("pageshow", () => {
   activeThemeTransition = undefined;
   root.classList.remove("theme-transitioning");
-  const saved = localStorage.getItem("theme");
+  const saved = readSavedTheme();
   if (saved && saved !== root.dataset.theme) {
     root.dataset.theme = saved;
   }
