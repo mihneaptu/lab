@@ -13,7 +13,7 @@ no build step, plain HTML, CSS, and a little vanilla JS.
 | [Melting button](animations/melting-button/index.html) | A button that melts on hover, two implementations side by side |
 | [Sun to moon](animations/sun-moon/index.html) | A sun that morphs into a moon on click, with the rays and stars on springs |
 | [Segmented control](animations/segmented-control/index.html) | A thumb riding a spring: click, drag, or fling it, and the segments retune the physics itself |
-| [Inertia preview rail](animations/inertia-preview-rail/index.html) | Seven previews on one strip: drag, fling, or wheel it, and a single spring settles the nearest into the center |
+| [Iron filings](animations/iron-filings/index.html) | A field of filings that turn to face the pointer, each on its own spring, so a wave of rotation trails the cursor |
 
 ## License
 

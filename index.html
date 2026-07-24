@@ -323,132 +323,50 @@
       color: var(--accent-contrast);
     }
 
-    /* The rail card's miniature: the strip itself at 1:5 or so — real
-       panels from the exhibit standing on the same traveling hairline,
-       stems and all, with the selected one lifted. Hovering or
-       keyboard-focusing the card slides the strip one preview over on
-       the seg-mini's overshoot ease (the closest a transition gets to
-       the spring inside), and the lift hands to the next panel the way
-       the exhibit's selection does. */
-    .rail-mini {
-      position: relative;
-      width: 200px;
-      height: 58px; /* 2px of lift headroom + 50px panel + 5px stem + line */
-      overflow: hidden;
+    /* The filings card's miniature: the same field, shrunk to where a
+       handful of strokes still reads as a field. Each stroke carries its
+       own two poses and its own delay, so hovering the card walks the
+       magnet from one corner to the other and the turn ripples outward
+       from where it lands — the exhibit's whole idea, in one gesture the
+       card can perform by itself. */
+    .filings-mini {
+      display: block;
+      width: 150px;
+      height: 93px;
     }
 
-    .rail-mini-track {
-      position: absolute;
-      top: 2px;
-      left: 0;
-      display: flex;
-      gap: 10px;
-      width: max-content;
-      transform: translateX(-20px); /* centers panel 3 in the 200px window */
-      transition: transform 520ms cubic-bezier(0.34, 1.3, 0.64, 1);
-    }
-
-    .component-card:hover .rail-mini-track,
-    .component-card:focus-visible .rail-mini-track {
-      transform: translateX(-70px); /* one panel-plus-gap to the left */
-    }
-
-    /* The hairline rides the track, like the exhibit's: the strip is
-       finite furniture, and both of its ends stay off this little
-       stage in both poses. */
-    .rail-mini-track::before {
-      content: "";
-      position: absolute;
-      left: -8px;
-      right: -8px;
-      bottom: -5px;
-      height: 1px;
-      background: var(--line-strong);
-    }
-
-    .rail-mini-item {
-      position: relative; /* anchors the stem */
-      flex: 0 0 auto;
-      width: 40px;
-      aspect-ratio: 4 / 5; /* the exhibit's panel, at token scale */
-      padding: 5px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 3px; /* radius-lg at this panel's scale */
-      transition: transform 240ms ease,
-                  border-color 240ms ease;
-    }
-
-    /* The stem pinning each panel to the hairline; the lifted panel's
-       stretches the same 2px so the tether never breaks. */
-    .rail-mini-item::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      bottom: -5px;
-      width: 1px;
-      height: 5px;
-      background: var(--line-strong);
-      transition: height 240ms ease,
-                  background-color 240ms ease;
-    }
-
-    .rail-mini .is-mid {
-      transform: translateY(-2px);
-      border-color: var(--line-strong);
-    }
-
-    .rail-mini .is-mid::after {
-      height: 7px;
-      background: var(--ink);
-    }
-
-    /* The handoff: the resting selection drops back as the next panel
-       takes the lift, both on the exhibit's own 240ms clock. */
-    .component-card:hover .rail-mini .is-mid,
-    .component-card:focus-visible .rail-mini .is-mid {
-      transform: none;
-      border-color: var(--line);
-    }
-
-    .component-card:hover .rail-mini .is-mid::after,
-    .component-card:focus-visible .rail-mini .is-mid::after {
-      height: 5px;
-      background: var(--line-strong);
-    }
-
-    .component-card:hover .rail-mini-item:nth-child(4),
-    .component-card:focus-visible .rail-mini-item:nth-child(4) {
-      transform: translateY(-2px);
-      border-color: var(--line-strong);
-    }
-
-    .component-card:hover .rail-mini-item:nth-child(4)::after,
-    .component-card:focus-visible .rail-mini-item:nth-child(4)::after {
-      height: 7px;
-      background: var(--ink);
-    }
-
-    /* The exhibit's six paint roles, so the artworks dress themselves.
-       Strokes carry vector-effect in the markup and stay hairline at
-       this scale; fills shrink with the panels, thinning the halftone
-       and waveform into texture — which is what a preview of a preview
-       should be. */
-    .rail-mini svg {
+    .filings-mini svg {
       display: block;
       width: 100%;
       height: 100%;
     }
 
-    .rail-mini svg .hair   { stroke: var(--line-strong); stroke-width: 1; }
-    .rail-mini svg .mute   { stroke: var(--ink-muted);   stroke-width: 1; }
-    .rail-mini svg .ink    { stroke: var(--ink); }
-    .rail-mini svg .solid  { fill: var(--ink); }
-    .rail-mini svg .soft   { fill: var(--ink-muted); }
-    .rail-mini svg .accent { fill: var(--accent); }
+    .filings-mini line {
+      stroke: var(--ink);
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      /* SVG geometry has no box of its own to turn around until you give
+         it one; without these the rotation pivots on the viewBox origin
+         and the strokes fly off. */
+      transform-box: fill-box;
+      transform-origin: center;
+      rotate: var(--a);
+      transition: rotate 420ms cubic-bezier(0.32, 0.72, 0, 1) var(--d);
+    }
 
-    .rail-mini svg :where(.hair, .mute, .ink) {
-      fill: none;
+    .component-card:hover .filings-mini line,
+    .component-card:focus-visible .filings-mini line {
+      rotate: var(--b);
+    }
+
+    /* Under reduced motion the strokes still take the hover pose, they
+       just take it at once: the global floor in base.css zeroes the
+       duration, and a stagger of delays on top of that would only be a
+       stutter. */
+    @media (prefers-reduced-motion: reduce) {
+      .filings-mini line {
+        transition-delay: 0ms;
+      }
     }
   </style>
 </head>
@@ -569,128 +487,52 @@
           </div>
         </a>
 
-        <a class="component-card" href="animations/inertia-preview-rail/index.html">
+        <a class="component-card" href="animations/iron-filings/index.html">
           <div class="card-preview" aria-hidden="true">
-            <!-- A live miniature of the specimen: six of the exhibit's
-                 real artworks on the real strip anatomy (hairline,
-                 stems, the lifted selection), sliding one preview over
-                 on card hover. The styles live in the block above. -->
-            <span class="rail-mini">
-              <span class="rail-mini-track">
-                <span class="rail-mini-item">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <g class="solid">
-                      <circle cx="16" cy="22" r="1.2"/><circle cx="28" cy="22" r="1.7"/>
-                      <circle cx="40" cy="22" r="2.2"/><circle cx="52" cy="22" r="2.7"/>
-                      <circle cx="64" cy="22" r="3.2"/><circle cx="76" cy="22" r="3.7"/>
-                      <circle cx="88" cy="22" r="4.2"/>
-                      <circle cx="16" cy="36" r="1.2"/><circle cx="28" cy="36" r="1.7"/>
-                      <circle cx="40" cy="36" r="2.2"/><circle cx="52" cy="36" r="2.7"/>
-                      <circle cx="64" cy="36" r="3.2"/><circle cx="76" cy="36" r="3.7"/>
-                      <circle cx="88" cy="36" r="4.2"/>
-                      <circle cx="16" cy="50" r="1.2"/><circle cx="28" cy="50" r="1.7"/>
-                      <circle cx="40" cy="50" r="2.2"/><circle cx="52" cy="50" r="2.7"/>
-                      <circle cx="64" cy="50" r="3.2"/><circle cx="76" cy="50" r="3.7"/>
-                      <circle cx="88" cy="50" r="4.2"/>
-                      <circle cx="16" cy="64" r="1.2"/><circle cx="28" cy="64" r="1.7"/>
-                      <circle cx="40" cy="64" r="2.2"/><circle cx="52" cy="64" r="2.7"/>
-                      <circle cx="64" cy="64" r="3.2"/><circle cx="76" cy="64" r="3.7"/>
-                      <circle cx="88" cy="64" r="4.2"/>
-                      <circle cx="16" cy="78" r="1.2"/><circle cx="28" cy="78" r="1.7"/>
-                      <circle cx="40" cy="78" r="2.2"/><circle cx="52" cy="78" r="2.7"/>
-                      <circle cx="64" cy="78" r="3.2"/><circle cx="76" cy="78" r="3.7"/>
-                      <circle cx="88" cy="78" r="4.2"/>
-                      <circle cx="16" cy="92" r="1.2"/><circle cx="28" cy="92" r="1.7"/>
-                      <circle cx="40" cy="92" r="2.2"/><circle cx="52" cy="92" r="2.7"/>
-                      <circle cx="64" cy="92" r="3.2"/><circle cx="76" cy="92" r="3.7"/>
-                      <circle cx="88" cy="92" r="4.2"/>
-                      <circle cx="16" cy="106" r="1.2"/><circle cx="28" cy="106" r="1.7"/>
-                      <circle cx="40" cy="106" r="2.2"/><circle cx="52" cy="106" r="2.7"/>
-                      <circle cx="64" cy="106" r="3.2"/><circle cx="76" cy="106" r="3.7"/>
-                      <circle cx="88" cy="106" r="4.2"/>
-                    </g>
-                  </svg>
-                </span>
-                <span class="rail-mini-item">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <path class="hair" d="M 33.7 43.6 A 18 18 0 0 1 66.3 43.6"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="hair" d="M 22.8 48.7 A 30 30 0 0 1 77.2 48.7"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="hair" d="M 11.9 53.7 A 42 42 0 0 1 88.1 53.7"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="mute" d="M 50 36 L 50 80" stroke-dasharray="2 4"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="ink" d="M 50 36 L 74.1 70.4" stroke-width="1.5"
-                          vector-effect="non-scaling-stroke"/>
-                    <circle class="solid" cx="74.1" cy="70.4" r="6"/>
-                    <circle class="solid" cx="50" cy="36" r="2.5"/>
-                  </svg>
-                </span>
-                <span class="rail-mini-item is-mid">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <path class="ink" stroke-width="1.5"
-                          d="M 10 62 C 17.3 46 22.7 46 30 62 C 37.3 78 42.7 78 50 62
-                             C 57.3 46 62.7 46 70 62 C 77.3 78 82.7 78 90 62"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="mute"
-                          d="M 10 62 C 17.3 72 22.7 72 30 62 C 37.3 52 42.7 52 50 62
-                             C 57.3 72 62.7 72 70 62 C 77.3 52 82.7 52 90 62"
-                          vector-effect="non-scaling-stroke"/>
-                    <circle class="solid" cx="30" cy="62" r="2"/>
-                    <circle class="solid" cx="50" cy="62" r="2"/>
-                    <circle class="solid" cx="70" cy="62" r="2"/>
-                  </svg>
-                </span>
-                <span class="rail-mini-item">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <circle class="hair" cx="50" cy="62" r="34"
-                            vector-effect="non-scaling-stroke"/>
-                    <circle class="mute" cx="50" cy="62" r="20" stroke-dasharray="1.5 4"
-                            vector-effect="non-scaling-stroke"/>
-                    <path class="ink" stroke-width="2.5"
-                          d="M 61.6 30.1 A 34 34 0 0 1 83.5 56.1"
-                          vector-effect="non-scaling-stroke"/>
-                    <rect class="accent" x="74.9" y="39.5" width="6" height="6"/>
-                    <path class="hair" d="M 50 56 L 50 68 M 44 62 L 56 62"
-                          vector-effect="non-scaling-stroke"/>
-                    <circle class="solid" cx="50" cy="62" r="1.5"/>
-                  </svg>
-                </span>
-                <span class="rail-mini-item">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <path class="hair" d="M 10 66 L 90 66"
-                          vector-effect="non-scaling-stroke"/>
-                    <rect class="soft"  x="13.5" y="60" width="5" height="12"/>
-                    <rect class="solid" x="22"   y="53" width="5" height="26"/>
-                    <rect class="soft"  x="30.5" y="57" width="5" height="18"/>
-                    <rect class="solid" x="39"   y="44" width="5" height="44"/>
-                    <rect class="accent" x="47.5" y="35" width="5" height="62"/>
-                    <rect class="solid" x="56"   y="49" width="5" height="34"/>
-                    <rect class="soft"  x="64.5" y="42" width="5" height="48"/>
-                    <rect class="solid" x="73"   y="56" width="5" height="20"/>
-                    <rect class="soft"  x="81.5" y="51" width="5" height="30"/>
-                  </svg>
-                </span>
-                <span class="rail-mini-item">
-                  <svg viewBox="0 0 100 125" aria-hidden="true">
-                    <path class="hair" d="M 14 98 L 90 98"
-                          vector-effect="non-scaling-stroke"/>
-                    <rect class="solid" x="22" y="34" width="26" height="64"/>
-                    <rect class="hair" x="56" y="50" width="30" height="30"
-                          stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-                    <path class="hair" d="M 48 66 L 56 66"
-                          vector-effect="non-scaling-stroke"/>
-                    <path class="mute" d="M 71 80 L 71 98" stroke-dasharray="2 3"
-                          vector-effect="non-scaling-stroke"/>
-                    <circle class="soft" cx="86" cy="50" r="1.5"/>
-                  </svg>
-                </span>
-              </span>
+            <!-- A live miniature of the specimen: one small field of the
+                 real thing. The styles live in the block above. -->
+            <span class="filings-mini">
+              <svg viewBox="0 0 100 62" aria-hidden="true">
+            <line x1="3.64" y1="6.20" x2="10.64" y2="6.20" style="--a:1.3deg;--b:77.2deg;--d:105ms"/>
+            <line x1="17.93" y1="6.20" x2="24.93" y2="6.20" style="--a:1.6deg;--b:94.1deg;--d:103ms"/>
+            <line x1="32.21" y1="6.20" x2="39.21" y2="6.20" style="--a:2.1deg;--b:110.3deg;--d:109ms"/>
+            <line x1="46.50" y1="6.20" x2="53.50" y2="6.20" style="--a:2.9deg;--b:123.8deg;--d:123ms"/>
+            <line x1="60.79" y1="6.20" x2="67.79" y2="6.20" style="--a:4.7deg;--b:134.1deg;--d:142ms"/>
+            <line x1="75.07" y1="6.20" x2="82.07" y2="6.20" style="--a:13.6deg;--b:141.7deg;--d:165ms"/>
+            <line x1="89.36" y1="6.20" x2="96.36" y2="6.20" style="--a:165.3deg;--b:147.4deg;--d:190ms"/>
+            <line x1="3.64" y1="18.60" x2="10.64" y2="18.60" style="--a:-7.7deg;--b:72.9deg;--d:79ms"/>
+            <line x1="17.93" y1="18.60" x2="24.93" y2="18.60" style="--a:-9.3deg;--b:95.5deg;--d:76ms"/>
+            <line x1="32.21" y1="18.60" x2="39.21" y2="18.60" style="--a:-11.9deg;--b:116.6deg;--d:85ms"/>
+            <line x1="46.50" y1="18.60" x2="53.50" y2="18.60" style="--a:-16.4deg;--b:132.1deg;--d:102ms"/>
+            <line x1="60.79" y1="18.60" x2="67.79" y2="18.60" style="--a:-26.0deg;--b:142.6deg;--d:125ms"/>
+            <line x1="75.07" y1="18.60" x2="82.07" y2="18.60" style="--a:-55.0deg;--b:149.7deg;--d:150ms"/>
+            <line x1="89.36" y1="18.60" x2="96.36" y2="18.60" style="--a:-122.9deg;--b:154.7deg;--d:177ms"/>
+            <line x1="3.64" y1="31.00" x2="10.64" y2="31.00" style="--a:-16.3deg;--b:64.7deg;--d:54ms"/>
+            <line x1="17.93" y1="31.00" x2="24.93" y2="31.00" style="--a:-19.6deg;--b:98.5deg;--d:50ms"/>
+            <line x1="32.21" y1="31.00" x2="39.21" y2="31.00" style="--a:-24.6deg;--b:127.6deg;--d:62ms"/>
+            <line x1="46.50" y1="31.00" x2="53.50" y2="31.00" style="--a:-32.6deg;--b:144.3deg;--d:84ms"/>
+            <line x1="60.79" y1="31.00" x2="67.79" y2="31.00" style="--a:-46.6deg;--b:153.6deg;--d:111ms"/>
+            <line x1="75.07" y1="31.00" x2="82.07" y2="31.00" style="--a:-72.1deg;--b:159.2deg;--d:139ms"/>
+            <line x1="89.36" y1="31.00" x2="96.36" y2="31.00" style="--a:-106.6deg;--b:162.9deg;--d:168ms"/>
+            <line x1="3.64" y1="43.40" x2="10.64" y2="43.40" style="--a:-24.2deg;--b:44.3deg;--d:32ms"/>
+            <line x1="17.93" y1="43.40" x2="24.93" y2="43.40" style="--a:-28.7deg;--b:107.9deg;--d:24ms"/>
+            <line x1="32.21" y1="43.40" x2="39.21" y2="43.40" style="--a:-35.1deg;--b:149.1deg;--d:44ms"/>
+            <line x1="46.50" y1="43.40" x2="53.50" y2="43.40" style="--a:-44.5deg;--b:161.7deg;--d:72ms"/>
+            <line x1="60.79" y1="43.40" x2="67.79" y2="43.40" style="--a:-58.5deg;--b:167.1deg;--d:102ms"/>
+            <line x1="75.07" y1="43.40" x2="82.07" y2="43.40" style="--a:-78.1deg;--b:170.1deg;--d:132ms"/>
+            <line x1="89.36" y1="43.40" x2="96.36" y2="43.40" style="--a:-101.0deg;--b:171.9deg;--d:162ms"/>
+            <line x1="3.64" y1="55.80" x2="10.64" y2="55.80" style="--a:-31.2deg;--b:-9.4deg;--d:24ms"/>
+            <line x1="17.93" y1="55.80" x2="24.93" y2="55.80" style="--a:-36.5deg;--b:-152.3deg;--d:8ms"/>
+            <line x1="32.21" y1="55.80" x2="39.21" y2="55.80" style="--a:-43.5deg;--b:-174.2deg;--d:38ms"/>
+            <line x1="46.50" y1="55.80" x2="53.50" y2="55.80" style="--a:-53.0deg;--b:-176.8deg;--d:69ms"/>
+            <line x1="60.79" y1="55.80" x2="67.79" y2="55.80" style="--a:-65.6deg;--b:-177.8deg;--d:99ms"/>
+            <line x1="75.07" y1="55.80" x2="82.07" y2="55.80" style="--a:-81.2deg;--b:-178.3deg;--d:130ms"/>
+            <line x1="89.36" y1="55.80" x2="96.36" y2="55.80" style="--a:-98.2deg;--b:-178.6deg;--d:160ms"/>
+              </svg>
             </span>
           </div>
           <div class="card-body">
-            <p class="card-name">Inertia preview rail</p>
+            <p class="card-name">Iron filings</p>
           </div>
         </a>
 

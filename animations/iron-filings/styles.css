@@ -1,0 +1,61 @@
+/* ==========================================================================
+   Iron filings — local styles
+
+   There is almost nothing to style here. The exhibit is a canvas, and
+   everything inside it is drawn by script.js in the theme's own ink
+   (read from --ink, so a theme flip repaints the field). What is left is
+   where the canvas sits and how big it is.
+
+   Everything global (the page chrome, the tokens, the reduced-motion
+   floor) comes from styles/base.css and styles/tokens.css.
+   ========================================================================== */
+
+.filings-stage {
+  min-height: 100vh;  /* fallback for browsers without dvh */
+  min-height: 100dvh; /* the VISIBLE viewport on mobile */
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+/* No card, no border, no surface: the field sits directly on the paper.
+   A frame around it would read as a picture of a field rather than as
+   the thing itself, and the strokes already draw their own edges. */
+.filings {
+  display: block;
+  width: min(92vw, 720px);
+  height: min(62vh, 520px);
+
+  /* The field takes the whole gesture. Without this a drag across the
+     strokes is eaten as a failed scroll on touch, and the one thing the
+     exhibit asks you to do stops working on a phone. */
+  touch-action: none;
+
+  /* The pointer is the magnet, so say so. A crosshair reads as "this
+     position matters" where an arrow reads as "click something". */
+  cursor: crosshair;
+}
+
+/* The corner chrome whispers; this whispers one step louder, because it
+   is the only thing telling a visitor what to do. Centred under the
+   field rather than pinned to an edge, so it reads as the field's
+   caption and not as more chrome. */
+.filings-hint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* On a phone the hint is competing with a much smaller field, and the
+   pointer that the copy talks about does not exist. Touch gets its own
+   wording from the script; here it only needs room. */
+@media (max-width: 30rem) {
+  .filings {
+    height: min(56vh, 420px);
+  }
+}
