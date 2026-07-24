@@ -1,2 +1,6 @@
 # Playwright MCP screenshots and page snapshots from local testing
 .playwright-mcp/
+
+# Design references pulled in to look at while building. Kept out of the
+# repo because they are someone else's work, not part of the site.
+bdox-home.jpeg

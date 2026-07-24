@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Not found &middot; mihneaptu/lab</title>
+
+  <!-- GitHub Pages serves this file for any missing path, at any depth,
+       so every reference here is absolute from the site root. A relative
+       path would resolve against the URL that failed, not against this
+       file, and the page would arrive unstyled. /lab/ is the project
+       site's base; it is the one place in the repo that has to know it. -->
+  <link rel="icon" type="image/svg+xml" href="/lab/favicon.svg">
+  <meta name="robots" content="noindex">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script>
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch {}
+      document.documentElement.dataset.theme =
+        saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+
+  <link rel="stylesheet" href="/lab/styles/tokens.css">
+  <link rel="stylesheet" href="/lab/styles/base.css">
+
+  <meta name="theme-color" content="#f4f4f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+
+  <style>
+    /* The page is one centred column: nothing to exhibit, so nothing
+       competes with the way out. */
+    .lost {
+      min-height: 100svh;
+      display: grid;
+      place-content: center;
+      justify-items: start;
+      gap: var(--space-4);
+      padding: var(--space-5);
+    }
+
+    /* The number is set as quiet mono, not as a headline. A 404 that
+       shouts is a 404 that blames the visitor for arriving. */
+    .lost-code {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--ink-muted);
+    }
+
+    .lost-note {
+      font-size: var(--text-md);
+      color: var(--ink-muted);
+      max-width: 46ch;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back-link" href="/lab/">&larr; back</a>
+
+  <main class="lost">
+    <p class="lost-code">404</p>
+    <h1 class="page-title">Nothing on this shelf</h1>
+    <p class="lost-note">
+      That page either moved or never existed. The experiments are all
+      one click away.
+    </p>
+  </main>
+
+</body>
+</html>
