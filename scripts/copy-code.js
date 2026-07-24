@@ -9,32 +9,42 @@
    the async clipboard, a denied clipboard permission. The visitor
    still gets the code, just one view-source away. */
 (() => {
-  const link = document.querySelector(".copy-code");
-  if (!link || !navigator.clipboard || !window.fetch) return;
+  /* All of them, not the first: a page showing two implementations side
+     by side wants a snippet for each, and a single-element lookup would
+     leave the second corner as a plain link with no explanation. */
+  const links = document.querySelectorAll(".copy-code");
+  if (!links.length || !navigator.clipboard || !window.fetch) return;
 
-  let resetTimer;
+  links.forEach((link) => {
+    /* The resting label is whatever the page wrote, not a constant here,
+       so restoring it can't rename a link that said something else. Each
+       link keeps its own timer too: one corner settling back must not cut
+       another's confirmation short. */
+    const resting = link.textContent;
+    let resetTimer;
 
-  link.addEventListener("click", async (event) => {
-    event.preventDefault();
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
 
-    try {
-      /* no-cache: revalidate instead of trusting a stale cached copy —
-         the snippet must match the code that's actually live */
-      const res = await fetch(link.getAttribute("href"), { cache: "no-cache" });
-      if (!res.ok) throw new Error(String(res.status));
-      await navigator.clipboard.writeText(await res.text());
-    } catch {
-      window.location.href = link.href;
-      return;
-    }
+      try {
+        /* no-cache: revalidate instead of trusting a stale cached copy —
+           the snippet must match the code that's actually live */
+        const res = await fetch(link.getAttribute("href"), { cache: "no-cache" });
+        if (!res.ok) throw new Error(String(res.status));
+        await navigator.clipboard.writeText(await res.text());
+      } catch {
+        window.location.href = link.href;
+        return;
+      }
 
-    /* The confirmation is the label itself — the word swaps, sits for a
-       beat, and swaps back. Pinned to the right edge, so the shorter
-       word grows from the same corner. */
-    link.textContent = "copied";
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => {
-      link.textContent = "copy code";
-    }, 1600);
+      /* The confirmation is the label itself — the word swaps, sits for a
+         beat, and swaps back. Pinned to the right edge, so the shorter
+         word grows from the same corner. */
+      link.textContent = "copied";
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        link.textContent = resting;
+      }, 1600);
+    });
   });
 })();
