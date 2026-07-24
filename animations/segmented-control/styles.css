@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Segmented control — local styles
+
+   The track, the thumb, and the segment labels. Everything global (the
+   page chrome, the tokens, the reduced-motion floor) comes from
+   styles/base.css and styles/tokens.css; only what this one exhibit
+   needs is here.
+   ========================================================================== */
+
+/* A single specimen, centered on the page like an exhibit. */
+body {
+  min-height: 100vh;  /* fallback for browsers without dvh */
+  min-height: 100dvh; /* the VISIBLE viewport on mobile — 100vh includes
+                         the space behind the retractable URL bar, which
+                         pushed the exhibit below true center */
+  display: grid;
+  place-items: center;
+  padding: var(--space-8) var(--space-6) var(--space-6);
+}
+
+.seg-specimen {
+  display: grid;
+  justify-items: center;
+  row-gap: var(--space-5);
+}
+
+/* --- The control -------------------------------------------------------
+   The exhibit: a segmented control whose thumb is a physical body on
+   a spring — and the three segments are spring PRESETS. Choosing one
+   retunes the very spring the thumb is riding, so the setting change
+   is something you feel mid-travel, not just see. (Same self-reference
+   as the sun-moon exhibit: that's not a demo of a theme switch, it IS
+   the theme switch.) */
+
+.seg {
+  --pad: 4px; /* track inset — the script's PAD constant mirrors this */
+
+  position: relative; /* anchors the thumb */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* equal thirds, so the
+    thumb's travel is an exact multiple of one segment's width and a
+    font swap can never shift the target under the spring */
+  width: min(340px, calc(100vw - 64px));
+  padding: var(--pad);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  /* the finger drives the thumb, so horizontal drags across the
+     control must reach it as pointer moves instead of being eaten as
+     a failed scroll — pan-y keeps vertical swipes scrolling the page
+     like anywhere else */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* a long press mid-drag is a grip,
+                                  not an invitation to the iOS callout */
+}
+
+/* The thumb. Its position is integrated per-frame by the script and
+   written as a transform, so there is deliberately NO transition here
+   — a CSS transition underneath would fight every integrated step
+   (the same reason .lean-letter carries none). The one exception is
+   the shadow: lifting it when grabbed is a state change, not motion,
+   and a 200ms fade of a small shadow costs no frames the spring
+   needs. */
+.seg-thumb {
+  position: absolute;
+  top: var(--pad);
+  bottom: var(--pad);
+  left: var(--pad);
+  /* the padding box is the containing block, so this lands exactly on
+     one grid third: (track - 2*pad) / 3 — one segment, no measuring */
+  width: calc((100% - 2 * var(--pad)) / 3);
+  background: var(--accent);
+  border-radius: var(--radius-sm); /* concentric: radius-md - pad */
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 200ms ease;
+}
+
+/* Held by a finger (or cursor): picked up, not just sitting there. */
+.seg-thumb.is-held {
+  box-shadow: var(--shadow-md);
+}
+
+/* The labels sit ABOVE the sliding thumb, and their ink answers the
+   thumb's LIVE position: the script marks whichever segment the
+   thumb's center is over .is-under — every frame, flight and drag
+   alike — so the contrast ink changes hands exactly as the thumb
+   crosses a boundary. (A timed swap driven by aria-checked was tried
+   first and always missed: the attribute commits the instant you
+   click, long before the thumb arrives, and no fixed delay matches
+   three different springs.) The short fade only softens the handoff;
+   with no delay on it, hover answers the cursor the moment it
+   lands. */
+.seg-option {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  height: 40px; /* 48px of control — a comfortable touch target */
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.seg-option.is-under {
+  color: var(--accent-contrast);
+}
+
+/* Gated behind (hover: hover): a phone has no cursor, but a tap
+   APPLIES :hover anyway — and then it sticks, pinning ink on a label
+   the thumb may already have left. */
+@media (hover: hover) {
+  .seg-option:not(.is-under):hover {
+    color: var(--ink);
+  }
+}
+
+/* One ring for every option. The 2px offset parks it on the track
+   just OUTSIDE the option's box — the resting thumb fills that same
+   box and never reaches the band the ring draws in — so the ring
+   always reads against the track surface, where --accent contrasts
+   in both themes. The checked state gets no override: painting the
+   ring in the thumb's contrast ink instead put white on white in
+   the light theme (and near-black on near-black in the dark). */
+.seg-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* While a drag owns the thumb, every label under the cursor is a
+   grip surface, not a button. */
+.seg.is-dragging,
+.seg.is-dragging .seg-option {
+  cursor: grabbing;
+}
