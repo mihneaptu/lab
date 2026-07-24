@@ -571,6 +571,25 @@ a:focus-visible {
   color: var(--ink);
 }
 
+/* The lab's light/dark switch, parked in the one free corner of an
+   exhibit page. Both top corners are spoken for (the way home on the
+   left, the take-home snippet on the right), and this is a utility
+   rather than navigation, so it sits opposite the exit and out of the
+   specimen's way. Fixed like its neighbours; the chip's touch halo
+   still measures from this box, since a fixed element anchors its own
+   absolutely positioned children.
+
+   The sun-moon exhibit deliberately has no copy: that exhibit IS the
+   switch, and a second control for the same state would be a duplicate
+   the page has to keep in sync. */
+.theme-toggle--corner {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  /* the specimens own the middle of the page; chrome stays on top */
+  z-index: 1;
+}
+
 /* --- Type roles ------------------------------------------------------------ */
 
 .page-title {

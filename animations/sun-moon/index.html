@@ -781,7 +781,25 @@
     let rafId = null;
     let lastT = 0;
 
+    /* The jiggle is JS, so the global reduced-motion rule in base.css
+       cannot reach it: that rule zeroes transition and animation clocks,
+       and this loop writes transforms itself, frame by frame. Honour the
+       preference here instead.
+
+       Every kick (a brushing pointer, a phone shake) funnels through
+       wake(), so one guard covers them all. The velocity a gesture just
+       handed out is dropped rather than banked, so nothing springs loose
+       later if the preference flips mid-visit. */
+    const calm = matchMedia("(prefers-reduced-motion: reduce)");
+
     function wake() {
+      if (calm.matches) {
+        for (const part of parts) {
+          part.x = part.y = part.vx = part.vy = 0;
+        }
+        return;
+      }
+
       if (rafId === null) {
         lastT = performance.now();
         rafId = requestAnimationFrame(tick);
