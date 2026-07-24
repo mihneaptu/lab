@@ -1,0 +1,357 @@
+/* ==========================================================================
+   Sun to moon — local styles
+
+   The specimen and its stage. Everything global (the page chrome, the
+   tokens, the reduced-motion floor) comes from styles/base.css and
+   styles/tokens.css; only what this one exhibit needs is here.
+   ========================================================================== */
+
+/* A single specimen, centered on the page like an exhibit. */
+body {
+  min-height: 100vh;  /* fallback for browsers without dvh */
+  min-height: 100dvh; /* the VISIBLE viewport on mobile — 100vh includes
+                         the space behind the retractable URL bar, which
+                         pushed the exhibit below true center */
+  display: grid;
+  place-items: center;
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  /* The sky doesn't snap to night — the paper crossfades on the
+     morph's own clock, so the world changes WITH the sun, not
+     before it. */
+  transition: background-color 500ms ease;
+}
+
+.sky-specimen {
+  display: grid;
+  justify-items: center;
+  row-gap: var(--space-5);
+}
+
+/* --- The toggle ------------------------------------------------------
+   A round button that holds the icon — styled like a piece of lab
+   chrome (surface, hairline border), not like the primary .btn. */
+
+.sky-toggle {
+  /* The morph's shared clock. One ease for everything keeps the
+     disc, rays, and mask feeling like a single object transforming
+     instead of three animations that happen to run at once.
+     A symmetric ease-in-out, NOT an exponential ease-out: an
+     exponential curve finishes ~70% of the travel in the first
+     tenth of a second, so the rays looked like they blinked out
+     rather than plunged in. This curve spends its speed in the
+     middle, where the eye can actually watch the parts travel. */
+  --sky-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --sky-time: 400ms;
+
+  position: relative; /* anchors the dot-grid layer below */
+  width: 176px;
+  height: 176px;
+  display: grid;
+  place-items: center;
+  color: var(--ink); /* the svg draws with currentColor */
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  /* md at rest, not sm: at 176px the chip-sized shadow reads as
+     "pasted on"; a big object needs a shadow that matches its size
+     to look like it's resting on the paper.
+     The FIXED light alias, deliberately: crossfading a box-shadow
+     between themes re-blurs it on the CPU every frame for the whole
+     500ms flip — the main thing that starved the morph of frames on
+     phones. So the button wears the light shadow permanently (a
+     faint black glow is invisible on the dark paper anyway), and
+     ::after below fades the dark theme's shadow in over it on the
+     GPU-cheap opacity channel instead. */
+  box-shadow: var(--shadow-md-light);
+  cursor: pointer;
+  /* the finger drives the cursor jiggle (see the script), so
+     horizontal drags across the button must reach it as pointer
+     moves instead of being eaten as a failed scroll — pan-y keeps
+     vertical swipes scrolling the page like anywhere else */
+  touch-action: pan-y;
+  /* only the press stays on the fast micro-feedback clock; border,
+     surface, and ink all ride the same slow crossfade as the paper.
+     Anything on a faster clock flips to the new theme ahead of the
+     surface and draws attention to itself — the border did exactly
+     that (a bright ring around the still-dark circle).
+     box-shadow stays in the list, but the theme flip no longer
+     touches it — only the desktop hover bloom does, and that reads
+     better slow too: light shifting over an object, not a control
+     lighting up. */
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 500ms ease,
+              background-color 500ms ease,
+              border-color 500ms ease,
+              color 500ms ease;
+}
+
+/* The dot grid lives on its own layer because a background-image
+   can't transition — the dots were snapping to the new theme while
+   everything else faded. The trick: this layer is a plain solid
+   color (which CAN transition), and a mask punches the dot pattern
+   out of it. The mask never changes; only the color crossfades,
+   on the same 500ms clock as everything else. */
+.sky-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--line);
+  -webkit-mask-image: radial-gradient(#000 1px, transparent 1px);
+  -webkit-mask-size: 14px 14px;
+  mask-image: radial-gradient(#000 1px, transparent 1px);
+  mask-size: 14px 14px;
+  transition: background-color 500ms ease;
+  pointer-events: none;
+}
+
+/* The dark theme's shadow, pre-painted on its own layer and simply
+   faded in when night falls. An opacity crossfade runs on the GPU
+   compositor; transitioning the box-shadow itself re-blurs those
+   big soft layers on the CPU during every frame of the 500ms flip —
+   exactly the frames the rays need for their 170ms plunge. On a
+   phone that contest dropped enough frames that the rays seemed to
+   hesitate, then blink out.
+   The layer is transparent, so only its shadow paints: the outer
+   glow lands outside the button's edge, and the inset top rim hugs
+   the rim far above the icon — nothing to cover, no z-index games. */
+.sky-toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-md-dark);
+  opacity: 0;
+  /* box-shadow is only here for the desktop hover bloom below —
+     the theme flip rides opacity alone */
+  transition: opacity 500ms ease, box-shadow 500ms ease;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .sky-toggle::after {
+  opacity: 1;
+}
+
+/* position: relative lifts the icon above the dot layer (positioned
+   pseudo-elements paint over static children otherwise) */
+.sky-icon {
+  position: relative;
+}
+
+/* Hover: a gentle 2px rise with the shadow deepening one step —
+   the object floating up to meet the cursor, not a control
+   lighting up. (The rise is on a quick 180ms clock; the shadow
+   blooms slowly behind it.)
+   Gated behind (hover: hover): a phone has no cursor, but a tap
+   APPLIES :hover anyway — and then it STICKS after the finger
+   lifts. That piled the rise and the shadow bloom onto the same
+   overloaded first frames of the morph, and left the button
+   floating at -2px afterwards. Mouse devices are unaffected. */
+@media (hover: hover) {
+  .sky-toggle:hover {
+    box-shadow: var(--shadow-lg-light);
+    transform: translateY(-2px);
+  }
+
+  /* the night sky's copy of the bloom, on its own layer */
+  .sky-toggle:hover::after {
+    box-shadow: var(--shadow-lg-dark);
+  }
+}
+
+/* Pressing the sky: the rise collapses and the button gives
+   slightly under the finger, like a physical switch. */
+.sky-toggle:active {
+  transform: scale(0.97);
+}
+
+.sky-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- The icon --------------------------------------------------------
+   One svg, three moving parts:
+
+     .disc — the sun's body, a filled circle.
+     .rays — eight short lines around it.
+     .bite — an invisible circle inside a <mask>, parked off-canvas.
+
+   The moon is never drawn. It's what's LEFT of the sun's disc after
+   the bite slides over it: the mask's white rectangle keeps the disc
+   visible, and wherever the black bite circle overlaps, the disc is
+   punched out. Slide the bite across one edge and a crescent remains. */
+
+.sky-icon {
+  width: 72px;
+  height: 72px;
+  /* the sunrise overshoot pokes the ray caps a hair past the
+     viewBox — let them, instead of clipping them flat */
+  overflow: visible;
+}
+
+/* transform-box: view-box makes "center" mean the middle of the
+   24x24 viewBox (12,12) — the point the disc grows from and the
+   rays rotate around. Without it, each line would use its own
+   tiny bounding box and the rays would spin in place. */
+.disc,
+.rays {
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+/* The three parts share one clock and one ease but start staggered,
+   so each motion hands off to the next and the whole thing reads
+   as ONE object transforming. The delays below are the moon→sun
+   direction (the crescent heals, the disc shrinks, the rays climb
+   back out last); the .is-moon block flips the order. */
+
+.bite {
+  transition: transform var(--sky-time) var(--sky-ease);
+}
+
+.disc {
+  transition: transform var(--sky-time) var(--sky-ease) 40ms;
+}
+
+/* The rays run on a slightly quicker clock than the other parts.
+   This is what lets everything play AT THE SAME TIME: the bite's
+   hole sweeps right through the space the right ray is retreating
+   from, so the rays must always be one step ahead of it — faster,
+   not earlier, keeps the whole morph simultaneous.
+   Their ease has a small overshoot: at sunrise the rays stretch a
+   hair past resting length and settle back — arrival with weight,
+   not interpolation. (Nightfall does NOT inherit this ease — the
+   overshoot is an arrival move, and its front-loaded start made
+   the plunge read as a flick; see the .is-moon block.) */
+.rays {
+  transition: transform calc(var(--sky-time) - 80ms)
+              cubic-bezier(0.34, 1.3, 0.64, 1) 140ms;
+}
+
+/* --- The moon state --------------------------------------------------
+   Sun → moon: the rays plunge inward and are swallowed by the
+   swelling disc, then the bite slides in from the top-right to
+   carve the crescent. Going back, the disc heals and shrinks, and
+   the rays climb back out of it. */
+
+.sky-toggle.is-moon .rays {
+  /* No fade: the rays are drawn UNDER the disc in the same color,
+     so shrinking them toward the center makes the swelling disc
+     swallow them whole. The rotation turns the plunge into a
+     turn of the sky — clockwise, sweeping toward the hollow the
+     bite is about to carve. (scale 0.25 parks them well inside
+     r=6, safely covered even before the disc finishes growing.)
+     240ms on the symmetric ease, not the base rule's 170ms on the
+     overshoot ease: that combination finished most of the travel
+     in the first few hundredths, which a 60Hz phone screen shows
+     as ~3 frames — a flick, not a plunge. The symmetric curve
+     spends its speed in the middle where the eye can follow it,
+     and the stretch is still safe: the rays' tips sink inside the
+     swelling disc by ~150ms, before the bite's notch touches the
+     rim (~170ms), and they finish (240ms) well ahead of the
+     carve (325ms) — still faster than the parts chasing them. */
+  transform: rotate(45deg) scale(0.25);
+  transition-duration: 240ms;
+  transition-timing-function: var(--sky-ease);
+  transition-delay: 0ms; /* the rays lead going to the moon... */
+}
+
+.sky-toggle.is-moon .disc {
+  /* r=6 scaled 1.75x reads as a proper moon; still inside the box.
+     The stretched clock is deliberate: the swell must OUTLAST the
+     bite (which runs 85-325ms), so the crescent is carved out of
+     a body that's visibly still growing — grow-and-carve as one
+     event, not grow, stop, carve. */
+  transform: scale(1.75);
+  transition-duration: 360ms;
+  transition-delay: 25ms; /* ...the disc swells as they sink in... */
+}
+
+.sky-toggle.is-moon .bite {
+  /* Parked at cx=36, this lands the bite at (17.3,10.5) — about
+     5.5 units off the disc's center, leaving a crescent ~7 units
+     thick that opens toward the top-right.
+     These three numbers move together: the park spot slid from 33
+     to 36 for jiggle clearance (see the mask), which stretched the
+     travel, so a longer clock and a shorter hold keep the visible
+     carve on the old schedule — the notch reaches the rim ~150ms
+     in, once the rays are most of the way home (any earlier and it
+     shows on the right rim while the LEFT rays still have the
+     longest journey, and the right side visibly wins the race),
+     and the sweep still finishes at 325ms, inside the disc's
+     swell. Rays land, then the carve sweeps. */
+  transform: translate(-18.7px, 0);
+  transition-duration: 285ms;
+  transition-delay: 40ms;
+}
+
+/* Going back (moon → sun) the base rules above already reverse
+   everything; the 60ms delay on .rays means the crescent heals
+   first and the rays pop out a beat later. */
+
+/* --- The stars --------------------------------------------------------
+   The payoff: once the crescent has settled, two small stars fly
+   out of it into the hollow it carved — and when day returns they
+   dive back in, eaten by the moon. No opacity tricks: their HOME
+   position is tucked inside the crescent's flesh, where ink on ink
+   is simply invisible (the same trick that hides the swallowed
+   rays). The spot is chosen to sit inside the small sun disc too,
+   so they stay hidden in daylight as well. */
+
+.star {
+  transform-box: fill-box;
+  transform-origin: center;
+  /* return flight: dive back into the moon right away */
+  transition: transform 280ms var(--sky-ease);
+}
+
+.star-1 {
+  opacity: 0.9;
+  transform: translate(-11.2px, 5.8px) scale(0.8);
+}
+
+.star-2 {
+  opacity: 0.7; /* a touch dimmer — reads as farther away */
+  transform: translate(-12.9px, 1.6px) scale(0.8);
+}
+
+/* Night falls: the moon releases its stars while the crescent is
+   still being carved — they launch invisible over its flesh, and
+   the sweeping bite uncovers them mid-flight. Staggered so they read as two arrivals, and on
+   a springy ease so they POP into place — a touch past their spot,
+   then settle, like something small coming to rest. */
+.sky-toggle.is-moon .star {
+  transform: none;
+  /* the launch rides the faster nightfall clock, same ~60% tempo
+     as the rest of the sun-to-moon morph */
+  transition-duration: 170ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sky-toggle.is-moon .star-1 {
+  transition-delay: 145ms;
+}
+
+.sky-toggle.is-moon .star-2 {
+  transition-delay: 195ms;
+}
+
+/* --- Caption ---------------------------------------------------------
+   Quiet mono metadata under the exhibit, like a specimen label. */
+
+.sky-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  user-select: none;
+  /* No slow color fade here: the word swaps early in the morph
+     (130ms). The color flip must be DONE before that — CSS
+     transitions and setTimeout run on different clocks, and if
+     they aim at the same instant the swap can land a frame early,
+     flashing the new word in the old ink. The ink fade starts a
+     couple of frames late (the script defers the theme flip by one
+     painted frame), so ~32ms + 80ms lands it around 112ms — still
+     a safe gap before the swap. */
+  transition: color 80ms ease;
+}
