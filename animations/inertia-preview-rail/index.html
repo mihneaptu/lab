@@ -25,9 +25,13 @@
   <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- The three faces, served from this repo rather than from a third
+       party. Only what a page actually sets text in is downloaded, so an
+       exhibit still pays for two files, not three. The body font is
+       preloaded: a font reached only through a stylesheet is not
+       discovered until that stylesheet has been parsed. -->
+  <link rel="preload" href="../../fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../styles/fonts.css">
 
   <!-- Sets the theme BEFORE the page paints, so there's no flash of the
        wrong colors. Your last choice wins; otherwise the OS preference. -->

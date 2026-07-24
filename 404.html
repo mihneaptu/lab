@@ -4,73 +4,120 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Not found &middot; mihneaptu/lab</title>
-
-  <!-- GitHub Pages serves this file for any missing path, at any depth,
-       so every reference here is absolute from the site root. A relative
-       path would resolve against the URL that failed, not against this
-       file, and the page would arrive unstyled. /lab/ is the project
-       site's base; it is the one place in the repo that has to know it. -->
-  <link rel="icon" type="image/svg+xml" href="/lab/favicon.svg">
   <meta name="robots" content="noindex">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- This page is deliberately self-contained: no stylesheet, no font
+       file, no favicon, nothing fetched at all.
 
-  <script>
-    (() => {
-      let saved = null;
-      try { saved = localStorage.getItem("theme"); } catch {}
-      document.documentElement.dataset.theme =
-        saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    })();
-  </script>
+       GitHub Pages serves it for ANY missing path, at any depth, and it
+       keeps the URL that failed. A relative href would resolve against
+       that dead URL, and an absolute one would have to hardcode the
+       project's base path, which is exactly the thing that broke the last
+       time this repo was renamed. A page whose whole job is to catch a
+       wrong turn should not itself depend on a path being right, so the
+       few tokens it needs are copied in below rather than imported.
 
-  <link rel="stylesheet" href="/lab/styles/tokens.css">
-  <link rel="stylesheet" href="/lab/styles/base.css">
-
-  <meta name="theme-color" content="#f4f4f3" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+       The one exception is the way home, which does have to name the
+       site's base. If the repo is ever renamed again, this is the line
+       to change. -->
 
   <style>
-    /* The page is one centred column: nothing to exhibit, so nothing
-       competes with the way out. */
-    .lost {
+    /* The handful of tokens this page needs, lifted from styles/tokens.css.
+       Kept in sync by hand, which is safe because they are the two least
+       volatile values in the system: the paper and the ink. */
+    :root {
+      color-scheme: light;
+      --paper: #f4f4f3;
+      --ink: #1a1a1a;
+      --ink-muted: #6b6b6b;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --paper: #121212;
+        --ink: #f2f2f2;
+        --ink-muted: #a3a3a3;
+      }
+    }
+
+    /* System stacks, not the lab's three faces: a font file is one more
+       thing that can fail to arrive, and this page exists precisely for
+       when something did not arrive. */
+    body {
+      margin: 0;
+      min-height: 100vh;
       min-height: 100svh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       display: grid;
       place-content: center;
       justify-items: start;
-      gap: var(--space-4);
-      padding: var(--space-5);
+      gap: 16px;
+      padding: 24px;
     }
 
-    /* The number is set as quiet mono, not as a headline. A 404 that
-       shouts is a 404 that blames the visitor for arriving. */
-    .lost-code {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
+    /* Quiet mono, not a headline. A 404 that shouts blames the visitor
+       for arriving. */
+    .code {
+      margin: 0;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 13px;
       color: var(--ink-muted);
     }
 
-    .lost-note {
-      font-size: var(--text-md);
+    h1 {
+      margin: 0;
+      font-size: 3rem;
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    p.note {
+      margin: 0;
+      font-size: 1.0625rem;
       color: var(--ink-muted);
       max-width: 46ch;
+    }
+
+    .home {
+      position: relative;
+      margin-top: 8px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 13px;
+      color: var(--ink-muted);
+      text-decoration: none;
+      transition: color 120ms ease;
+    }
+
+    /* One line of small mono is a ~21px target; the halo brings it to ~44. */
+    .home::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+    }
+
+    .home:hover,
+    .home:focus-visible {
+      color: var(--ink);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
 <body>
 
-  <a class="back-link" href="/lab/">&larr; back</a>
-
-  <main class="lost">
-    <p class="lost-code">404</p>
-    <h1 class="page-title">Nothing on this shelf</h1>
-    <p class="lost-note">
-      That page either moved or never existed. The experiments are all
-      one click away.
-    </p>
-  </main>
+  <p class="code">404</p>
+  <h1>Nothing on this shelf</h1>
+  <p class="note">
+    That page either moved or never existed. The experiments are all one
+    click away.
+  </p>
+  <a class="home" href="/lab/">&larr; back to the lab</a>
 
 </body>
 </html>

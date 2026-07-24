@@ -1,0 +1,52 @@
+/* ==========================================================================
+   fonts.css — the three faces, served from this repo
+
+   These used to come from fonts.googleapis.com, which meant every page
+   opened a connection to a third party and waited on a stylesheet from
+   it before it could even discover which font files to fetch. On a site
+   whose whole subject is how things move, that is a stall in exactly the
+   wrong place, and it hands a visitor's IP to someone else on the way.
+
+   All three are variable fonts, so one file covers a family's whole
+   weight range rather than one file per weight. The subset is Google's
+   own "latin" cut, which is what the lab's copy is written in; a page
+   that ever needs more can add the latin-ext file beside it.
+
+   font-display: swap is deliberate and matches what was here before:
+   text paints immediately in the fallback and reflows once the real face
+   lands. For a monochrome page of mostly short strings that is a better
+   trade than invisible text.
+   ========================================================================== */
+
+/* Display. The opsz axis is why this is requested as a variable font at
+   all: Bricolage redraws itself for the size it is set at, so the
+   homepage headline and a 13px label are not the same shapes scaled. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../fonts/bricolage-grotesque.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Body. The one that does most of the work, so it is the one worth
+   preloading in each page's head. */
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("../fonts/instrument-sans.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The lab equipment: labels, tokens, the corner chrome. */
+@font-face {
+  font-family: "Spline Sans Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("../fonts/spline-sans-mono.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

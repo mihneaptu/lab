@@ -25,9 +25,15 @@
   <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- The three faces, served from this repo rather than from a third
+       party. Only what a page actually sets text in is downloaded, so an
+       exhibit pays for one file here, not three.
+
+       Every word on this page (the corner chrome, the sun/moon label) is
+       mono, so mono is what gets preloaded. Preloading the body font
+       instead would fetch 30 KB nothing on the page ever renders in. -->
+  <link rel="preload" href="../../fonts/spline-sans-mono.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../styles/fonts.css">
 
   <!-- Sets the theme BEFORE the page paints, so there's no flash of the
        wrong colors. Your last choice wins; otherwise the OS preference. -->
