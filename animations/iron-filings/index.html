@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron filings &middot; mihneaptu/lab</title>
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <!-- What this page is, for search results and for the card that gets
+       drawn when someone drops the link in a chat. Without these a link
+       to a page whose whole point is how it MOVES arrives as bare text. -->
+  <meta name="description" content="A field of filings that turn to face the pointer, each on its own spring, so a wave of rotation trails behind the cursor.">
+  <link rel="canonical" href="https://mihneaptu.github.io/lab/animations/iron-filings/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="mihneaptu/lab">
+  <meta property="og:title" content="Iron filings">
+  <meta property="og:description" content="A field of filings that turn to face the pointer, each on its own spring, so a wave of rotation trails behind the cursor.">
+  <meta property="og:url" content="https://mihneaptu.github.io/lab/animations/iron-filings/">
+  <meta property="og:image" content="https://mihneaptu.github.io/lab/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Paints the browser's own chrome to match the page it frames.
+       Both values are --paper from tokens.css, one per sky. -->
+  <meta name="theme-color" content="#f4f4f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+
+  <!-- The three faces, served from this repo rather than from a third
+       party. Only what a page actually sets text in is downloaded.
+
+       Every word here (the corner chrome, the hint) is mono, so mono is
+       what gets preloaded: a font reached only through a stylesheet is
+       not discovered until that stylesheet has been parsed. -->
+  <link rel="preload" href="../../fonts/spline-sans-mono.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../styles/fonts.css">
+
+  <script>
+    /* Storage access can throw outright, not just come back empty: a
+       locked-down profile or a blocked third-party context refuses the
+       read. An uncaught throw here would abort this script and leave the
+       page dressed in the wrong sky before it ever paints, so the OS
+       preference stands in. Scoped in an IIFE to keep the head clean. */
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch {}
+      document.documentElement.dataset.theme =
+        saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+
+  <link rel="stylesheet" href="../../styles/tokens.css">
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <a class="back-link" href="../../index.html">&larr; back</a>
+
+  <!-- The theme switch, the sun-moon exhibit's morph in miniature and
+       icon-only: the icon IS the current sky. CSS keys the poses off
+       <html data-theme>, so flipping the theme plays the animation. -->
+  <button class="theme-toggle theme-toggle--corner" type="button" aria-label="Switch color theme">
+    <svg class="tt-sky" viewBox="0 0 24 24" aria-hidden="true">
+      <mask id="tt-crescent">
+        <rect x="0" y="0" width="24" height="24" fill="white" />
+        <circle class="tt-bite" cx="33" cy="10.5" r="9" fill="black" />
+      </mask>
+      <g mask="url(#tt-crescent)">
+        <g class="tt-rays" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="1"     x2="12"    y2="3" />
+          <line x1="12" y1="21"    x2="12"    y2="23" />
+          <line x1="1"  y1="12"    x2="3"     y2="12" />
+          <line x1="21" y1="12"    x2="23"    y2="12" />
+          <line x1="4.22"  y1="4.22"  x2="5.64"  y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="4.22"  y1="19.78" x2="5.64"  y2="18.36" />
+          <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22" />
+        </g>
+        <circle class="tt-disc" cx="12" cy="12" r="6" fill="currentColor" />
+      </g>
+    </svg>
+  </button>
+
+  <main class="filings-stage">
+    <!-- The exhibit needs no visible title, but its outline does: a page
+         with no h1 gives anyone navigating by headings nothing to land on. -->
+    <h1 class="visually-hidden">Iron filings</h1>
+
+    <!-- One canvas, a few hundred strokes. Every stroke is a separate
+         spring, which is the whole exhibit; drawing them as DOM nodes
+         would spend the frame budget on layout instead of on physics. -->
+    <canvas class="filings" role="img"
+            aria-label="A field of short strokes that turn to face the pointer."></canvas>
+
+    <p class="filings-hint">move to comb the field &middot; click to send a pulse</p>
+  </main>
+
+  <script src="script.js"></script>
+  <script src="../../scripts/theme.js"></script>
+  <script src="../../scripts/haptics.js"></script>
+
+</body>
+</html>
