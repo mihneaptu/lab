@@ -24,6 +24,15 @@
     let resetTimer;
 
     link.addEventListener("click", async (event) => {
+      /* A modified click is a request for a new tab, a new window, or a
+         download — the browser's job, not ours. Preventing the default
+         here would make ctrl-click quietly copy instead, which is the
+         one thing a link is expected never to do. (Middle-click never
+         reaches this: it arrives as auxclick.) */
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
       event.preventDefault();
 
       try {
