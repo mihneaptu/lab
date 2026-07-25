@@ -301,12 +301,28 @@ if (canvas && canvas.getContext) {
   });
 
   /* A parked loop restarts from a stale timestamp, which would hand the
-     first frame back a huge dt. Drop the clock on the way out instead. */
+     first frame back a huge dt. Drop the clock on the way out instead —
+     and pick the motion back up on the way in, because a field parked
+     mid-swing would otherwise stay frozen half-turned until something
+     else happened to wake it. wake() reseeds the clock, so the restart
+     costs nothing. */
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden" && rafId !== null) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+    if (document.visibilityState === "hidden") {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      return;
     }
+
+    calm.matches ? settle() : wake();
+  });
+
+  /* wake() guards the way in; this guards the way out. Turning the
+     preference on mid-visit should stop what is already moving, not
+     wait for the springs to park on their own. */
+  calm.addEventListener("change", () => {
+    calm.matches ? settle() : wake();
   });
 
   /* ---- opening ------------------------------------------------------- */
