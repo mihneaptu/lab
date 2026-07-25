@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown</title>
+
+<!-- The countdown, standalone — from mihneaptu.github.io/lab (MIT).
+
+     Four numbers ticking down, and what happens when they run out: the
+     digits lift away one cell after another, the frame they sat in fades
+     behind them, and the message they were counting to rises into the
+     space. Then two cannons of confetti, and a slow fall after it.
+
+     Set TARGET and MESSAGE at the top of the script and it is your
+     countdown. TARGET takes a month and a day rather than a full date
+     because it is written for an anniversary: it rolls to next year on
+     its own once the day has passed. Counting to a one-off moment
+     instead? Replace nextAnniversary() with a plain `new Date(...)`.
+
+     To watch the ending without waiting for it, point TARGET at a moment
+     a few seconds out. The exhibit version has a replay button for this;
+     it is exhibit furniture, so it is not here.
+
+     Every color and size is an inlined design token: retune :root and
+     everything follows. This snippet is light-theme only — the exhibit
+     reads its palette back out of the page so the one confetti colour
+     that is INK can flip with the theme. -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper: #f4f4f3;      /* page background */
+    --surface: #ffffff;    /* the cells */
+    --ink: #1a1a1a;
+    --ink-muted: #6b6b6b;  /* unit labels, the date */
+    --line: #e4e4e2;       /* the frame, and the rules between cells */
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --font-mono: "Spline Sans Mono", Consolas, monospace;
+    /* The message is deliberately NOT a webfont: the look is weight 300,
+       and the lightest sans guaranteed to be on hand is the one already
+       installed. Swap in your own light face if you have one. */
+    --font-message: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* The confetti. Five hues and one near-black; on a dark page, make
+       that last one near-white or a sixth of every burst is invisible. */
+    --confetti-1: #e2725b;
+    --confetti-2: #e8a33d;
+    --confetti-3: #5b8fd9;
+    --confetti-4: #d4739e;
+    --confetti-5: #5fb894;
+    --confetti-6: #1f1f1f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;  /* fallback for browsers without dvh */
+    min-height: 100dvh; /* the VISIBLE viewport on mobile — 100vh includes
+                           the space behind the retractable URL bar */
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 32px;
+    padding: 64px 24px 32px;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Over everything, catching nothing. */
+  .cd-fx {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* One cell, two occupants: the count and what it counts to, stacked so
+     the cell is as tall as the taller of them. The resting one is hidden
+     with visibility, which still reserves its box — so the swap never
+     resizes the page, with no hardcoded height to keep in step. */
+  .cd-slot {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .cd-face,
+  .cd-message { grid-area: 1 / 1; }
+
+  /* visibility can't tween, so each rule pairs it with the fade in the
+     one arrangement that works: LEAVING, hold it back for the fade's
+     full length; ARRIVING, flip it at 0s. Which one a rule needs depends
+     on the direction it moves, so all four state their own. */
+  .cd-face { transition: opacity 320ms ease, visibility 0s; }
+
+  .cd-message {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 320ms ease, visibility 0s linear 320ms;
+  }
+
+  body.is-done .cd-face {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 320ms ease, visibility 0s linear 320ms;
+  }
+
+  body.is-done .cd-message {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 320ms ease, visibility 0s;
+    animation: cd-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Not a fade — the opacity above is that. This is the arrival: the
+     message comes UP into the space the digits left. */
+  @keyframes cd-rise {
+    from { transform: translateY(16px) scale(0.96); }
+    to   { transform: none; }
+  }
+
+  /* The 1px gaps let the frame's own background show through as the
+     rules between cells, so no per-cell borders double up at the seams.
+     The explicit width matters: without it the grid shrink-wraps to its
+     contents and the digits sit hard against the cell walls. */
+  .cd-clock {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    width: min(34rem, calc(100vw - 48px));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .cd-unit {
+    background: var(--surface);
+    padding: 32px 8px 24px;
+    text-align: center;
+  }
+
+  /* A monospaced face is already tabular, so the row never breathes in
+     and out as the seconds turn over. */
+  .cd-num {
+    font-family: var(--font-mono);
+    font-size: clamp(2rem, 9vw, 3rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; /* for the fallback face */
+    transition: color 600ms ease;
+  }
+
+  .cd-name {
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  /* The final minute: everything but the seconds steps back, so the one
+     number still doing anything is the one you're watching. Mixing
+     toward the paper fades in whichever direction the paper lies. */
+  body.is-final .cd-unit:not(:last-child) .cd-num {
+    color: color-mix(in srgb, var(--ink) 32%, var(--paper));
+  }
+
+  .cd-date {
+    margin: 32px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    text-align: center;
+  }
+
+  .cd-message {
+    margin: 0;
+    max-width: 20ch;
+    font-family: var(--font-message);
+    font-size: 2rem;
+    font-weight: 300;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  @media (max-width: 30rem) {
+    .cd-unit { padding: 24px 4px 16px; }
+    .cd-name { font-size: 0.625rem; letter-spacing: 0.06em; }
+  }
+
+  /* Someone who asked their OS to calm the screen down gets the message
+     without the slide. The JS half checks the same query before running
+     the handoff or the confetti at all. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+    body.is-done .cd-message { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas class="cd-fx" aria-hidden="true"></canvas>
+
+<div class="cd-slot">
+  <div class="cd-face">
+    <!-- aria-hidden, with the live region below carrying the real
+         reading: a screen reader announcing four separately-updating
+         numbers once a second is unusable, and "07" alone means
+         nothing. Each cell's contents are wrapped in a .cd-stack because
+         the handoff lifts the DIGITS while the frame around them stays
+         put and fades on its own clock. -->
+    <div class="cd-clock" aria-hidden="true">
+      <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="d">--</div><div class="cd-name">Days</div></div></div>
+      <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="h">--</div><div class="cd-name">Hours</div></div></div>
+      <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="m">--</div><div class="cd-name">Minutes</div></div></div>
+      <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="s">--</div><div class="cd-name">Seconds</div></div></div>
+    </div>
+    <p class="cd-date"></p>
+  </div>
+
+  <p class="cd-message"></p>
+</div>
+
+<p class="cd-reading" role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap"></p>
+
+<script>
+(() => {
+  "use strict";
+
+  /* --- The two facts ---------------------------------------------------
+     The month is 0-indexed, the way Date takes it — 6 is July. */
+  const MONTH = 6;
+  const DAY = 26;
+  const MESSAGE = "Time's up.";
+
+  const body = document.body;
+  const face = document.querySelector(".cd-face");
+  const stacks = Array.from(document.querySelectorAll(".cd-stack"));
+  const dateEl = document.querySelector(".cd-date");
+  const messageEl = document.querySelector(".cd-message");
+  const readingEl = document.querySelector(".cd-reading");
+  const nums = {};
+  document.querySelectorAll(".cd-num").forEach((el) => {
+    nums[el.dataset.unit] = el;
+  });
+
+  messageEl.textContent = MESSAGE;
+
+  /* Read live rather than latched at load, so flipping the OS setting
+     mid-session is honored. */
+  const calm = matchMedia("(prefers-reduced-motion: reduce)");
+
+  /* --- Where the count is ---------------------------------------------- */
+
+  /* The whole of the day counts as the day itself — an anniversary is
+     not over at 00:00:01. */
+  function isToday() {
+    const now = new Date();
+    return now.getMonth() === MONTH && now.getDate() === DAY;
+  }
+
+  function nextAnniversary() {
+    const now = new Date();
+    const t = new Date(now.getFullYear(), MONTH, DAY, 0, 0, 0, 0);
+    return t <= now
+      ? new Date(now.getFullYear() + 1, MONTH, DAY, 0, 0, 0, 0)
+      : t;
+  }
+
+  /* --- The confetti ---------------------------------------------------- */
+
+  const canvas = document.querySelector(".cd-fx");
+  const ctx = canvas.getContext("2d");
+
+  let parts = [];
+  let rafId = null;
+  let lastT = 0;
+  let w = 0;
+  let h = 0;
+
+  const palette = [
+    "--confetti-1", "--confetti-2", "--confetti-3",
+    "--confetti-4", "--confetti-5", "--confetti-6",
+  ].map((name) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  );
+
+  function layout() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    /* Cap the backing store at 2x: past that the extra pixels cost real
+       fill rate on a phone and buy nothing the eye can find on a 5px
+       rectangle. */
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawn(n, o) {
+    for (let i = 0; i < n; i++) {
+      const a = o.angle + (Math.random() - 0.5) * o.spread;
+      const v = o.velocity * (0.55 + Math.random() * 0.8);
+      parts.push({
+        x: o.x, y: o.y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v,
+        w: 5 + Math.random() * 5,
+        h: 8 + Math.random() * 6,
+        color: palette[(Math.random() * palette.length) | 0],
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 0.28,
+        tilt: Math.random() * Math.PI * 2,
+        vtilt: 0.07 + Math.random() * 0.12,
+        life: 0,
+        ttl: o.ttl,
+      });
+    }
+    if (rafId === null) { lastT = 0; rafId = requestAnimationFrame(frame); }
+  }
+
+  function frame(now) {
+    /* dt in frames rather than seconds, so the constants below read as
+       "per frame at 60Hz" — and clamped, because a backgrounded tab
+       hands the first frame back a gap that would teleport every piece
+       off screen in one step. */
+    const dt = lastT ? Math.min((now - lastT) / 16.667, 3) : 1;
+    lastT = now;
+
+    ctx.clearRect(0, 0, w, h);
+
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.life += dt;
+
+      const fade = 1 - p.life / p.ttl;
+      if (fade <= 0 || p.y > h + 60) { parts.splice(i, 1); continue; }
+
+      p.vy += 0.21 * dt;                 /* gravity */
+      const drag = Math.pow(0.986, dt);  /* air, framerate-independent */
+      p.vx *= drag;
+      p.vy *= drag;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rot += p.vrot * dt;
+      p.tilt += p.vtilt * dt;
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, fade * 3);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      /* The flutter. Scaling one axis by a cosine is a paper rectangle
+         turning edge-on and back: it thins to nothing, then fills out
+         the other way. */
+      ctx.scale(1, Math.cos(p.tilt));
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+
+    if (parts.length) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, w, h);
+      cancelAnimationFrame(rafId);
+      rafId = null;
+      lastT = 0;
+    }
+  }
+
+  /* Two cannons firing inward from just off each edge, angled up. Power
+     scales with the smaller viewport dimension so the arcs cross the
+     middle on a phone as well as on a desk. */
+  function cannons() {
+    const y = h * 0.66;
+    const power = Math.max(13, Math.min(w, h) / 48);
+    spawn(75, { x: -12, y, angle: -Math.PI / 3.2, spread: 0.8, velocity: power, ttl: 280 });
+    spawn(75, { x: w + 12, y, angle: -Math.PI + Math.PI / 3.2, spread: 0.8, velocity: power, ttl: 280 });
+  }
+
+  /* The long tail: a thin fall from above the top edge, restaged every
+     240ms. */
+  function shower(left) {
+    spawn(10, { x: Math.random() * w, y: -25, angle: Math.PI / 2, spread: 0.9, velocity: 2, ttl: 460 });
+    if (left > 0) setTimeout(() => shower(left - 1), 240);
+  }
+
+  /* On the day itself, a click anywhere is worth a little more of it. */
+  addEventListener("pointerdown", (e) => {
+    if (!body.classList.contains("is-done") || calm.matches) return;
+    spawn(45, {
+      x: e.clientX, y: e.clientY,
+      angle: -Math.PI / 2, spread: Math.PI * 1.35,
+      velocity: 11, ttl: 220,
+    });
+  });
+
+  /* --- The handoff ------------------------------------------------------ */
+
+  let done = false;
+  let firstPass = true;
+
+  /* fromLoad: a page that opens already past its target has nothing to
+     hand off FROM — the digits it would lift away never showed a count.
+     So it skips the choreography and simply arrives, after a beat long
+     enough for the first paint to land before the confetti does. */
+  function celebrate(fromLoad) {
+    if (done) return;
+    done = true;
+
+    if (calm.matches || fromLoad) {
+      setTimeout(finish, fromLoad ? 420 : 0);
+      return;
+    }
+
+    /* The digits leave first, one cell after another, on an ease that
+       accelerates away — they are departing, not settling. */
+    stacks.forEach((stack, i) => {
+      stack.animate(
+        [
+          { opacity: 1, transform: "none" },
+          { opacity: 0, transform: "translateY(-12px)" },
+        ],
+        { duration: 360, delay: i * 70, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" }
+      );
+    });
+
+    /* Then the empty frame goes, starting as the last cell empties: the
+       frame outlives its contents by a beat, so what you watch is a box
+       being vacated and then dismissed, not both at once. */
+    face.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: 320, delay: 420, easing: "ease", fill: "forwards",
+    });
+
+    setTimeout(finish, 780);
+  }
+
+  function finish() {
+    body.classList.remove("is-final");
+    body.classList.add("is-done");
+    readingEl.textContent = MESSAGE;
+    if (calm.matches) return;
+    cannons();
+    setTimeout(() => shower(14), 400);
+  }
+
+  /* --- The count -------------------------------------------------------- */
+
+  let shownDate = null;
+  let lastAnnounced = null;
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+  /* Coarse and polite: a live region re-read once a second talks over
+     everything else a visitor is doing. */
+  function announce(text) {
+    if (text === lastAnnounced) return;
+    lastAnnounced = text;
+    readingEl.textContent = text;
+  }
+
+  function tick() {
+    if (isToday()) {
+      celebrate(firstPass);
+      firstPass = false;
+      return;
+    }
+    firstPass = false;
+
+    const target = nextAnniversary();
+    const stamp = +target;
+
+    if (shownDate !== stamp) {
+      shownDate = stamp;
+      dateEl.textContent = target.toLocaleDateString(undefined, {
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
+      });
+    }
+
+    const total = Math.max(0, Math.floor((stamp - Date.now()) / 1000));
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor(total / 3600) % 24;
+    const mins = Math.floor(total / 60) % 60;
+
+    nums.d.textContent = days;
+    nums.h.textContent = pad(hours);
+    nums.m.textContent = pad(mins);
+    nums.s.textContent = pad(total % 60);
+
+    announce(
+      total < 60
+        ? `${plural(total, "second")} remaining.`
+        : `${plural(days, "day")}, ${plural(hours, "hour")} and ` +
+          `${plural(mins, "minute")} remaining.`
+    );
+
+    body.classList.toggle("is-final", total <= 60);
+
+    /* The last ten seconds: the one number still moving gets a pulse per
+       tick. No fill — it returns to rest on its own. */
+    if (total <= 10 && !calm.matches) {
+      nums.s.animate(
+        [{ transform: "scale(1)" }, { transform: "scale(1.14)" }, { transform: "scale(1)" }],
+        { duration: 520, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }
+      );
+    }
+  }
+
+  /* Aligned to the wall clock rather than run on a plain interval. A
+     1000ms interval drifts against the second it is displaying, and once
+     the two are out of phase the seconds digit starts repeating or
+     skipping a value — the one flaw a visitor to a countdown is
+     guaranteed to catch. Landing a moment PAST each boundary guarantees
+     the value has rolled over by the time it is read. */
+  let tickTimer = null;
+
+  function scheduleTick() {
+    clearTimeout(tickTimer);
+    tickTimer = setTimeout(() => {
+      tick();
+      scheduleTick();
+    }, 1000 - (Date.now() % 1000) + 25);
+  }
+
+  let resizeFrame = null;
+  addEventListener("resize", () => {
+    if (resizeFrame !== null) return; /* one relayout per frame */
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null;
+      layout();
+    });
+  });
+
+  /* A backgrounded tab throttles both the timer and the frame loop, so
+     the count comes back stale by however long it was away. */
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") return;
+    tick();
+    scheduleTick();
+  });
+
+  layout();
+  tick();
+  scheduleTick();
+})();
+</script>
+</body>
+</html>

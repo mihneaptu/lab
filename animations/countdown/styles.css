@@ -1,0 +1,318 @@
+/* ==========================================================================
+   Countdown — local styles
+
+   The clock frame, the two faces that trade places when the count lands,
+   and the replay control. The handoff itself — the digits lifting away in
+   sequence, the frame fading behind them — is timed in script.js, because
+   its steps have to be cancellable mid-flight; everything here is the
+   scenery those steps move.
+
+   Everything global (the page chrome, the tokens, the reduced-motion
+   floor) comes from styles/base.css and styles/tokens.css.
+   ========================================================================== */
+
+.cd-stage {
+  min-height: 100vh;  /* fallback for browsers without dvh */
+  min-height: 100dvh; /* the VISIBLE viewport on mobile — 100vh includes
+                         the space behind the retractable URL bar, which
+                         pushed the exhibit below true center */
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  /* Wider than the gap holding the date to the clock above it, so the
+     two groups read as two: the readout and its date, then the control.
+     See the note on .cd-date. */
+  gap: var(--space-7);
+  padding: var(--space-8) var(--space-5) var(--space-6);
+}
+
+/* The confetti's canvas: over everything, catching nothing. Fixed rather
+   than absolute so it stays glued to the viewport if the page ever
+   scrolls, and above .cd-stage so pieces pass in FRONT of the message
+   they're celebrating — behind it they'd read as a wallpaper. */
+.cd-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* --- The two faces ------------------------------------------------------ */
+
+/* One cell, two occupants. Both children are placed in it explicitly, so
+   the cell is as tall as the taller of them and neither can shift the
+   page when they trade places. */
+.cd-slot {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+}
+
+.cd-face,
+.cd-message {
+  grid-area: 1 / 1;
+}
+
+/* visibility can't tween — it flips at one instant — so every rule below
+   pairs it with the fade in the one arrangement that works: LEAVING, it
+   is held back for the fade's full length so the element stays on screen
+   the whole way out; ARRIVING, it flips at 0s so the fade has something
+   visible to fade. Which delay a rule needs is decided by the direction
+   it moves, and each of the four rules here states its own — a shared
+   value would be right for one direction and wrong for the other, which
+   is exactly how an element ends up fading in while still hidden. */
+
+/* The count: on screen at rest, so this rule is its ARRIVAL. */
+.cd-face {
+  transition: opacity 320ms ease, visibility 0s;
+}
+
+/* The message: off screen at rest, so this rule is its DEPARTURE. */
+.cd-message {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 320ms ease, visibility 0s linear 320ms;
+}
+
+/* --- The clock ---------------------------------------------------------- */
+
+/* No card, no border, no surface: the readout sits directly on the
+   paper. This started as a bordered frame with hairline rules between
+   the cells, and the frame was doing nothing the four labels weren't
+   already doing — it drew a picture of a clock instead of just being
+   one, the same argument iron-filings/styles.css makes for leaving its
+   field unframed. Four numbers spaced evenly across a fixed width read
+   as a readout on their own.
+
+   What the frame WAS doing, and still has to be done, is set the
+   spacing. So the grid keeps its explicit width: left to shrink-wrap,
+   the four columns collapse to just wider than a 48px digit and the
+   numbers bunch into the middle of the page. 34rem over four columns
+   gives each about 136px — the proportion is the point, not the number.
+   The subtraction keeps the readout off the screen edges on a phone,
+   where 34rem is wider than the viewport. Same shape as the segmented
+   control's own width. */
+.cd-clock {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: min(34rem, calc(100vw - 2 * var(--space-5)));
+}
+
+.cd-unit {
+  /* The number and its label are one centered column. Left alignment
+     reads as a table of values; centered reads as four instruments side
+     by side, which is what this is. */
+  text-align: center;
+}
+
+/* Spline Sans Mono is monospaced, so the digits are already tabular and
+   need no font-variant-numeric: every second ticks without the row
+   breathing in and out. Weight 400 because that is the bottom of this
+   face's variable range and font-synthesis is off — asking for 300 gets
+   400 anyway, so the file may as well say what it will get. */
+.cd-num {
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; /* for the fallback face, which
+                                         may well be proportional */
+  transition: color 600ms ease;
+}
+
+.cd-name {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* The final minute: everything but the seconds steps back, so the one
+   number still doing anything is the one you're watching. A mix rather
+   than --ink-muted, which the LABELS already use — dimming the digits to
+   their own captions' voice would flatten the cell instead of ranking
+   it. Mixing toward the paper fades in whichever direction the current
+   theme's paper lies, so this needs no dark-theme counterpart. */
+body.is-final .cd-unit:not(:last-child) .cd-num {
+  color: color-mix(in srgb, var(--ink) 32%, var(--paper));
+}
+
+/* The line keeps its height even when it has nothing to say, which is
+   the case during a rehearsal: an empty <p> collapses to zero, and this
+   one sits inside the face that decides how tall the slot is — so
+   letting it collapse would pull the replay button up the page on every
+   replay and drop it back afterwards. Reserving one line costs nothing
+   and holds the layout still. */
+.cd-date {
+  /* This line belongs to the clock, and spacing is the only thing left
+     saying so now that no frame encloses them together. So it stays
+     nearer the labels than the replay button below it is to the date —
+     the stage's own gap is a step wider for exactly that reason. Get the
+     two the wrong way round and the date reads as a second caption
+     attached to the button. */
+  margin-top: var(--space-6);
+  min-height: 21px; /* fallback: --text-xs at the body's 1.6 line-height */
+  min-height: 1lh;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* --- The message -------------------------------------------------------- */
+
+/* The one expressive moment on the page — but a quiet one. This sentence
+   arrives alone on an empty stage at 32px, and at that size the size IS
+   the emphasis, the same note tokens.css makes about .page-title. Both
+   lab faces were tried here and both land heavier than the moment wants:
+   they state the message where it should offer it.
+
+   So this is the lab's one deliberate departure from its three self-
+   hosted faces, and the reasoning deserves to be written down rather
+   than discovered.
+
+   The look is weight 300, and NEITHER lab face can produce it. Both are
+   cut at 400 upward (fonts.css), and base.css sets font-synthesis: none
+   precisely so a missing weight fails visibly instead of being faked —
+   so `font-weight: 300` on either one silently renders as 400. The only
+   light sans available without adding a fourth file to the repo is the
+   one already on the reader's machine.
+
+   The cost, stated plainly: system-ui is a different typeface per OS —
+   Segoe UI Light on Windows, SF Pro Light on Apple, Roboto Light on
+   Android. Everywhere else the lab self-hosts fonts specifically so that
+   cannot happen. Here it is accepted: all three are light neutral sanses
+   at 300, so every visitor gets the same WEIGHT and the same air, which
+   is what this moment is actually made of, even though the letterforms
+   differ. If a light cut is ever added to fonts/, this is the one rule
+   that should change back. */
+.cd-message {
+  max-width: 20ch; /* keeps a long message to two or three lines rather
+                      than one wide ribbon the eye has to track */
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--text-xl);
+  font-weight: 300;
+  line-height: 1.25;
+  letter-spacing: -0.025em; /* a light face at this size opens up without it */
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* The count's DEPARTURE. In a played handoff the script has already
+   faded this face with its own cancellable animation by the time the
+   class lands, and the two simply agree on the destination; this rule is
+   what does the work when there was no animation to play — a page that
+   loads already past its target, or a visitor under reduced motion. */
+body.is-done .cd-face {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 320ms ease, visibility 0s linear 320ms;
+}
+
+/* The message's ARRIVAL. */
+body.is-done .cd-message {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 320ms ease, visibility 0s;
+  animation: cd-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Not a fade — the opacity above is already doing that. This is the
+   arrival: the message comes UP into the space the digits left, slightly
+   under-sized, on the same soft-landing ease the digits leave on. */
+@keyframes cd-rise {
+  from { transform: translateY(16px) scale(0.96); }
+  to   { transform: none; }
+}
+
+/* --- The replay control ------------------------------------------------- */
+
+/* Chrome that whispers one step louder than the corners, like the
+   filings' hint: it is the only thing telling a visitor that the payoff
+   can be seen on demand rather than once a year. Caption-plain at rest,
+   underlining on hover so it admits to being a control the moment you
+   reach for it.
+
+   The padding grows a ~20px line of mono into a ~44px touch target and
+   the negative margin hands the space straight back, so the stage's gap
+   stays the gap it looks like. */
+.cd-replay {
+  padding: 12px var(--space-2);
+  margin: -12px calc(-1 * var(--space-2));
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  cursor: pointer;
+  /* The visibility pairing here is the ARRIVAL — flipped at 0s so the
+     fade has something visible to fade. Its departure, with the delay,
+     is on the .is-replaying rule below. Same arrangement as .cd-face
+     and .cd-message further up. */
+  transition: color var(--speed-color) ease,
+              opacity 260ms ease,
+              visibility 0s;
+}
+
+/* While a rehearsal is running the control steps aside. It has nothing
+   left to offer until the handoff lands, and a button sitting under the
+   very performance it just started is the one piece of furniture
+   competing with it for attention.
+
+   It fades rather than vanishing, and keeps its box either way — the
+   stage's rows are already laid out, so a display swap here would drag
+   the whole composition up the page and drop it back.
+
+   visibility rides along on purpose: an invisible button that a
+   keyboard can still tab to is a trap, and opacity alone leaves exactly
+   that. The delay holds it on screen for the full fade, then takes it
+   out of the tab order. */
+body.is-replaying .cd-replay {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 260ms ease, visibility 0s linear 260ms;
+}
+
+.cd-replay:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.cd-replay:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* --- Small screens ------------------------------------------------------ */
+
+/* Four columns of mono get tight fast: at the narrow end each one is
+   about 90px, and "MINUTES" set at the full label size wraps under its
+   own number. Dropping a step and tightening the tracking keeps every
+   label on one line. */
+@media (max-width: 30rem) {
+  .cd-name {
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* --- Reduced motion ------------------------------------------------------
+   base.css already floors every duration here to ~0. What is left to say
+   is that the message should not still be sliding up from 16px below
+   when it lands: with the clock crushed to nothing, the rise reads as a
+   flinch rather than an arrival. The WAAPI half of the handoff (the
+   digits, the frame) is gated in script.js instead — animations given
+   explicit durations in JS never see the CSS floor. */
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-done .cd-message {
+    animation: none;
+  }
+}

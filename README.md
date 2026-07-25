@@ -14,6 +14,7 @@ no build step, plain HTML, CSS, and a little vanilla JS.
 | [Sun to moon](animations/sun-moon/index.html) | A sun that morphs into a moon on click, with the rays and stars on springs |
 | [Segmented control](animations/segmented-control/index.html) | A thumb riding a spring: click, drag, or fling it, and the segments retune the physics itself |
 | [Iron filings](animations/iron-filings/index.html) | A field of filings that turn to face the pointer, each on its own spring, so a wave of rotation trails the cursor |
+| [Countdown](animations/countdown/index.html) | Four numbers ticking down, and the handoff when they land: the digits lift away one cell at a time, the frame fades behind them, and confetti follows |
 
 ## License
 

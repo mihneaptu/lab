@@ -72,10 +72,34 @@
                                  flips to dark in the dark theme, where the
                                  accent itself is light */
 
-  /* The one hue in the whole lab: a gold reserved for the header's
-     star easter egg. Nothing else may use it — one splash of color
-     stays a delight; a second one starts a palette. */
+  /* The gold, reserved for the header's star easter egg. Nothing else
+     may use it.
+
+     Color in this lab is never chrome. It is only ever a REWARD for an
+     interaction: hover the cat and the stars fly, hover the interactive
+     tag and a rainbow drifts through its letters (base.css), reach the
+     end of the countdown and the confetti fires. Every one of those is
+     something you had to do to see, none of them carries meaning the
+     monochrome doesn't already carry, and all of them end on their own.
+     A hue that sits there permanently — a colored border, a tinted
+     surface, a status dot — is what starts a palette, and there isn't
+     one. That's the rule; the count of hues never was. */
   --gold: #eab308;
+
+  /* The confetti, and the reason it gets tokens instead of an array
+     buried in one exhibit's script: five of these are fixed, but the
+     sixth is INK, and ink flips with the sky. Left at #1f1f1f it would
+     spend the dark theme as invisible near-black rectangles falling
+     through a near-black page — a sixth of every burst simply missing.
+     Declaring it here lets the dark block below flip it like any other
+     color, and lets the exhibit read the whole palette back out of the
+     cascade rather than hard-coding a theme it can't see. */
+  --confetti-1: #e2725b;  /* coral  */
+  --confetti-2: #e8a33d;  /* amber  */
+  --confetti-3: #5b8fd9;  /* blue   */
+  --confetti-4: #d4739e;  /* pink   */
+  --confetti-5: #5fb894;  /* green  */
+  --confetti-6: #1f1f1f;  /* ink — the one that flips */
 
   /* Shadows are for elevation, not decoration. Soft and barely-there:
      if you notice the shadow itself, it's too strong. Defined here (not
@@ -213,6 +237,12 @@
 
   /* The stars' gold, a notch brighter so it reads on the dark paper */
   --gold: #facc15;
+
+  /* The confetti's ink piece, flipped. The other five hues are mid-tone
+     enough to read on either paper and stay as they are — recoloring
+     them per theme would make the celebration two different
+     celebrations. */
+  --confetti-6: #f2f2f2;
 
   /* Dark shadows can't read on a dark floor — black on near-black is
      invisible. So elevation flips with the light (see the note above:

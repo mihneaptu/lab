@@ -368,6 +368,148 @@
         transition-delay: 0ms;
       }
     }
+
+    /* The countdown card's miniature: the exhibit's own frame, shrunk,
+       with the real remaining time in it (scripts/countdown-card.js
+       writes the numbers). Hovering plays the handoff the card is named
+       for — the digits lift away one cell after another and the message
+       rises into the space they leave, on the exhibit's own stagger and
+       eases. Like the sun-moon card, it performs the very effect it
+       promises rather than showing a still of it. */
+    .cd-mini {
+      display: grid;
+      justify-items: center;
+      align-items: center;
+      width: 100%;
+      /* The stage is sized by the row, not by this content. Grid rows
+         stretch every card to the tallest in the row, and the filings
+         card's miniature makes its own preview 142px; a shorter one here
+         would leave the difference as blank white under the name, since
+         .card-preview's 108px min-height stops well short. 94px + the
+         stage's 24px padding top and bottom lands on that 142. The
+         readout itself is only ~40px tall and simply centers in the
+         space — which is what the melting-button and sun-moon cards do
+         too, with a 32px specimen in a 108px stage. */
+      min-height: 94px;
+    }
+
+    /* Both faces share one cell, so the taller decides the height and
+       neither can shift the card as they trade places — the same
+       arrangement the exhibit uses. */
+    .cd-mini-clock,
+    .cd-mini-message {
+      grid-area: 1 / 1;
+    }
+
+    /* No frame, no cell walls, no surface — just the four readings on
+       the stage. The exhibit's clock has a real bordered frame, and the
+       first version of this card reproduced it, but a bordered box drawn
+       inside the card's own bordered stage reads as a picture of a clock
+       rather than as the clock: the same argument iron-filings/styles.css
+       makes for leaving its field unframed. At this size the hairlines
+       were also just visual noise. The four labels are what group the
+       numbers now, and they do it well enough. */
+    .cd-mini-clock {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      width: 100%;
+    }
+
+    .cd-mini-unit {
+      text-align: center;
+    }
+
+    .cd-mini-num {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: var(--text-lg);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Single letters, not the exhibit's full words. Four cells across a
+       260px card leaves each about 45px of usable width, and "MINUTES"
+       set legibly does not fit in it — the exhibit's own narrow
+       breakpoint already shrinks these labels, and this is that idea
+       taken one step further. In a row of four descending numbers, d h
+       m s reads without help. */
+    .cd-mini-name {
+      display: block;
+      margin-top: var(--space-1);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    /* The stacks and the message carry the poses; the delays below give
+       the lift its left-to-right sweep. Same 70ms step as the exhibit,
+       same accelerating-away ease for the departure and the same soft
+       landing for the arrival. */
+    .cd-mini-stack {
+      display: block;
+      transition: opacity 240ms cubic-bezier(0.4, 0, 1, 1),
+                  transform 240ms cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    .component-card:hover .cd-mini-stack,
+    .component-card:focus-visible .cd-mini-stack {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    .cd-mini-unit:nth-child(2) .cd-mini-stack { transition-delay: 50ms; }
+    .cd-mini-unit:nth-child(3) .cd-mini-stack { transition-delay: 100ms; }
+    .cd-mini-unit:nth-child(4) .cd-mini-stack { transition-delay: 150ms; }
+
+    /* The exhibit has a third beat here — the emptied frame fading after
+       the digits have gone — and the card used to copy it. With the
+       frame dropped there is nothing left to dismiss: the digits ARE the
+       clock now, so fading their container after they have already faded
+       would animate nothing. Two beats it is. */
+
+    .cd-mini-message {
+      /* the exhibit's message face: the lightest sans on hand, since
+         neither lab face is cut below 400 */
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      /* Near the digits' own size, because it REPLACES them: a message
+         much smaller than what it stands in for reads as a caption about
+         the missing clock rather than as the thing the clock handed over
+         to. Half a step under, so the sentence still sits quieter than
+         the readout it follows. */
+      font-size: 1.25rem;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      text-align: center;
+      text-wrap: balance;
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+      transition: opacity 260ms ease,
+                  transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .component-card:hover .cd-mini-message,
+    .component-card:focus-visible .cd-mini-message {
+      opacity: 1;
+      transform: none;
+      /* starts as the last digit is still leaving — overlapping the two
+         keeps the gesture tight without losing the order */
+      transition-delay: 260ms;
+    }
+
+    /* Under reduced motion the base.css floor already zeroes every
+       duration here; the delays would survive it and turn a swap that
+       should be instant into a half-second of staggered nothing. */
+    @media (prefers-reduced-motion: reduce) {
+      .cd-mini-stack,
+      .cd-mini-message,
+      .component-card:hover .cd-mini-message,
+      .component-card:focus-visible .cd-mini-message {
+        transition-delay: 0ms;
+      }
+    }
   </style>
 </head>
 <body>
@@ -536,6 +678,27 @@
           </div>
         </a>
 
+        <a class="component-card" href="animations/countdown/index.html">
+          <div class="card-preview" aria-hidden="true">
+            <!-- A live miniature of the specimen: the exhibit's frame at
+                 card size, with the real time left in it — the numbers
+                 come from scripts/countdown-card.js. The styles, and the
+                 hover handoff they play, live in the block above. -->
+            <span class="cd-mini">
+              <span class="cd-mini-clock">
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="d">--</span><span class="cd-mini-name">d</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="h">--</span><span class="cd-mini-name">h</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="m">--</span><span class="cd-mini-name">m</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="s">--</span><span class="cd-mini-name">s</span></span></span>
+              </span>
+              <span class="cd-mini-message">Happy birthday!</span>
+            </span>
+          </div>
+          <div class="card-body">
+            <p class="card-name">Countdown</p>
+          </div>
+        </a>
+
       </div>
 
     </main>
@@ -553,6 +716,7 @@
   <script src="scripts/haptics.js"></script>
   <script src="scripts/rainbow-tag.js"></script>
   <script src="scripts/title-lean.js"></script>
+  <script src="scripts/countdown-card.js"></script>
 
 </body>
 </html>

@@ -12,7 +12,8 @@
    effort labels — stays silent, the same rule the visuals follow:
    choreography belongs to the exhibits, everything else keeps quiet.
    A buzz plays only when the hand causes something physical on
-   screen: the theme morph committing, a melt starting. (A uniform
+   screen: the theme morph committing, a melt starting, a countdown
+   sent back to replay its handoff. (A uniform
    whisper on every tap target was tried and rolled back — it made
    this the one website that buzzes on every link, without exhibiting
    any craft in return.)
@@ -131,6 +132,19 @@
 
     if (event.target.closest(".theme-toggle, .sky-toggle")) {
       buzz(patterns.theme);
+      return;
+    }
+
+    /* The countdown's replay button: a press tick and nothing more.
+       The handoff it starts is the physical event worth feeling, but
+       that lands seven seconds later — and the rule above is that a
+       pattern is handed over whole at the press, so nothing has to run
+       timers while an animation is playing. A seven-second pattern of
+       mostly silence to reach it would be exactly the timer that rule
+       exists to avoid. So the press gets the firm tick that says the
+       button took, and the confetti speaks for itself. */
+    if (event.target.closest(".cd-replay")) {
+      buzz(12);
     }
   });
 
