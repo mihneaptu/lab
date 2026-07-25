@@ -103,7 +103,11 @@ function settleAllTransitions() {
    its final pose and the wipe emanated from a teleporting moon. */
 function applyThemeAndSettle(theme) {
   applyTheme(theme);
-  void toggle.offsetWidth;
+  /* Optional-chained for the same reason the listener above is: this
+     file runs on pages with no toggle. Nothing reaches here without one
+     today, but a reflow read is not worth being the line that breaks
+     the day something does. */
+  void toggle?.offsetWidth;
   settleThemedTransitions();
 }
 
