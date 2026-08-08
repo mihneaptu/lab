@@ -26,8 +26,8 @@
   padding: var(--space-8) var(--space-5) var(--space-6);
 }
 
-/* The confetti's canvas: over everything, catching nothing. Fixed rather
-   than absolute so it stays glued to the viewport if the page ever
+/* The celebration's canvas: over everything, catching nothing. Fixed
+   rather than absolute so it stays glued to the viewport if the page ever
    scrolls, and above .cd-stage so pieces pass in FRONT of the message
    they're celebrating — behind it they'd read as a wallpaper. */
 .cd-fx {
@@ -35,6 +35,20 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
+}
+
+/* Except for the balloons, which are the one celebration made of large,
+   opaque, slow-moving bodies. The rule above is written for flecks that
+   are past before you've read them; a balloon parked over the arrival
+   sentence for a second and a half doesn't decorate it, it hides it.
+
+   The value has to be NEGATIVE, not 0. The stage's contents are not
+   positioned, and a positioned element sits above non-positioned content
+   whatever its z-index, so only going below the flow puts the canvas
+   behind the words. It still paints over the page's background, which is
+   the whole width of what's wanted. */
+body.fx-behind .cd-fx {
+  z-index: -1;
 }
 
 /* --- The two faces ------------------------------------------------------ */
@@ -324,6 +338,159 @@ body.is-replaying .cd-setup {
   margin: 0;
 }
 
+/* --- The theme picker ---------------------------------------------------
+
+   Which celebration the arrival throws. It governs the two fields below
+   it, so it sits above them — and takes the full row so they wrap
+   underneath, rather than sitting alongside as a third equal control.
+
+   The words stand the same distance apart as the two fields below them,
+   so the whole strip keeps one rhythm instead of reading as two rows
+   that happened to land near each other. */
+.cd-themes {
+  position: relative; /* anchors the travelling rule, .cd-themes::after */
+  flex-basis: 100%;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-5);
+  margin: 0;
+
+  /* How far under the words their rule sits. Clear of the descenders in
+     "birthday" and "new year", close enough to belong to the word rather
+     than float beneath the row.
+
+     Declared once, here, because TWO rules are drawn at this offset —
+     the travelling mark and the no-script fallback under each label —
+     and they have to agree to the pixel, or the moment one hands over to
+     the other would show as a jump. */
+  --cd-mark-gap: var(--space-1);
+}
+
+/* Word, not button. A pill or a track here would out-shout the replay
+   button above it and put a second box on a page that has just cleared
+   itself down to one sentence. The chosen one is simply the one written
+   in ink, with a rule under it — the same way the wordmark's links admit
+   to being links only when you reach for them. */
+.cd-theme-label {
+  position: relative; /* anchors this label's own rule and focus ring */
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  /* Grows a ~21px line of mono into a ~45px touch target; the negative
+     margin hands the space straight back, so the row stays the height it
+     looks. Both halves only work because these labels are flex items and
+     have therefore been blockified — vertical padding on a bare inline
+     label paints without making room, and vertical margins on one do
+     nothing at all. */
+  padding: var(--space-3) var(--space-1);
+  margin: calc(-1 * var(--space-3)) 0;
+  transition: color var(--speed-color) ease;
+}
+
+@media (hover: hover) {
+  .cd-theme-label:hover {
+    color: var(--ink);
+  }
+}
+
+/* :checked lives on the input, which sits immediately before its label —
+   so the adjacent sibling combinator is what dresses the chosen word.
+   No script touches these classes; the radio group's own state is the
+   single source of truth for which one looks chosen. */
+.cd-theme-input:checked + .cd-theme-label {
+  color: var(--ink);
+}
+
+/* The chosen word's rule, with no script measuring: one per label, shown
+   on the checked one. script.js replaces this with a single rule for the
+   whole row that SLIDES between words — but until it has measured, and
+   if it never runs at all, the choice still has to be visible.
+
+   A pseudo-element rather than a border-bottom or an underline, because
+   the label's box is padded out to a touch target: a border lands at the
+   bottom of THAT box, a dozen pixels below the word, reading as a stray
+   hairline under the row rather than as a mark on the word. This is
+   positioned from the box's bottom edge back up to the text.
+
+   100% is the label's padding box, so the arithmetic is the padding it
+   was given above, and lands the rule exactly where the row's own
+   travelling mark sits. */
+.cd-theme-label::after {
+  content: "";
+  position: absolute;
+  top: calc(100% - var(--space-3) + var(--cd-mark-gap));
+  left: var(--space-1);   /* the word, not its touch target: matching the */
+  right: var(--space-1);  /* label's own padding trims the rule back to it */
+  height: 1px;
+  background: var(--line-strong);
+  opacity: 0;
+}
+
+.cd-theme-input:checked + .cd-theme-label::after {
+  opacity: 1;
+}
+
+/* The travelling mark: ONE rule for the whole row, parked under whichever
+   word is chosen and sliding across when another is picked. Choosing a
+   celebration is a change of mind, not two unrelated events, and a rule
+   that travels says so where a pair of crossfading underlines cannot.
+
+   script.js measures the chosen word and hands its position over in
+   --cd-mark-x / --cd-mark-w, adding .is-marked once it has. The width
+   arrives as a scale on a 1px seed rather than as a width, so the whole
+   move is one transform the compositor can carry, and so the hairline
+   stays exactly one pixel tall at any length. */
+.cd-themes::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + var(--cd-mark-gap));
+  left: 0;
+  width: 1px;
+  height: 1px;
+  background: var(--line-strong);
+  transform-origin: 0 0;
+  transform: translateX(var(--cd-mark-x, 0)) scaleX(var(--cd-mark-w, 0));
+  opacity: 0; /* nothing to show until it has been measured */
+}
+
+.cd-themes.is-marked::after {
+  opacity: 1;
+}
+
+/* With the row's own mark in place, the per-label fallback stands down:
+   two hairlines at the same offset would draw one twice as dark. */
+.cd-themes.is-marked .cd-theme-input:checked + .cd-theme-label::after {
+  opacity: 0;
+}
+
+/* Movement is granted only once the mark has been measured against the
+   face it will actually be drawn in. Before that, a change of position is
+   a correction rather than a choice, and nobody should watch it cross the
+   row on load. base.css floors this to nothing under reduced motion,
+   which leaves the mark simply appearing where it belongs. */
+.cd-themes.mark-moves::after {
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* The input is off screen, so its focus ring has to be drawn by the
+   label — otherwise a keyboard arriving here would light up a 1px box
+   nobody can see.
+
+   Around the WORD, not around the touch target: the label's box is
+   padded out to 44px, so a ring on it draws a slab twice the height of
+   anything visible inside. Insetting a pseudo-element back to the text
+   leaves the ring holding the word and its rule, which are one thing. */
+.cd-theme-input:focus-visible + .cd-theme-label::before {
+  content: "";
+  position: absolute;
+  inset: var(--space-2) 0 var(--space-1);
+  outline: 2px solid var(--accent);
+  border-radius: 2px;
+}
+
 /* Both fields, styled as one. Underlined rather than boxed: a box here
    would be the heaviest object on a page whose whole composition is
    type on empty paper, and the line is enough to say "you can type in
@@ -336,14 +503,47 @@ body.is-replaying .cd-setup {
      different website. */
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  /* Said explicitly too, and for the same kind of reason: at the UA's
+     `normal` these two disagree about their own height by 2px, because a
+     date field is built from internal fields with metrics of their own.
+     Two underlines a pixel apart is exactly the sort of thing that reads
+     as sloppy without anyone being able to say why. One value, one line. */
+  line-height: 1.6;
   color: var(--ink-muted);
   background: none;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0; /* iOS rounds inputs by default */
-  padding: var(--space-1) var(--space-2);
+  /* Even padding rather than a squat 4px: these two are the only things
+     on the page a thumb has to aim at, and it grows them from ~29px to a
+     ~38px target without the underline drifting far from the text. */
+  padding: var(--space-2);
   transition: color var(--speed-color) ease,
               border-color var(--speed-color) ease;
+}
+
+/* Chromium sizes a date input to a fixed intrinsic width that no content
+   keyword can talk down — min-content, fit-content and auto all report
+   the same 133px, which is room for a longer date than any locale writes.
+   The spare space collects at the right, between the date and the
+   browser's calendar button, and reads as a field that failed to fill
+   rather than one waiting to be filled.
+
+   So the width is stated: ten characters for the date itself, which in a
+   monospaced face is exactly what "mm/dd/yyyy" measures, plus a space
+   unit for the button the browser draws after it. */
+.cd-set-date {
+  width: calc(10ch + var(--space-5) + 2 * var(--space-2));
+}
+
+/* And the 2px the line-height note above is about: Chromium gives the
+   wrapper around the internal day/month/year fields a 1px band top and
+   bottom, which is what makes a date field two pixels taller than a text
+   field set at the same size. Zeroed here so the two underlines land on
+   one line. Every other engine ignores the selector, and has nothing to
+   fix. */
+.cd-set-date::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
 }
 
 .cd-set-message {

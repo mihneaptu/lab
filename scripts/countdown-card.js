@@ -31,6 +31,29 @@
      can throw outright in a locked-down profile, not merely come back
      empty — and a card is nobody's reason to take the homepage down. */
   const KEY_TARGET = "countdown:target";
+  const KEY_THEME = "countdown:theme";
+
+  /* The exhibit's two arrival sentences, by theme. Duplicated from its
+     THEMES table on purpose: with no build step there is nowhere shared
+     to put two strings, and the alternative — leaving the card asserting
+     one sentence while the exhibit uses the other — is the mismatch a
+     visitor would actually notice, since the card's hover plays the very
+     handoff the exhibit lands with. */
+  const MESSAGES = {
+    birthday: "Happy birthday!",
+    newyear: "Happy new year!",
+    launch: "It's live!",
+  };
+
+  function storedTheme() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(KEY_THEME);
+    } catch {
+      return "newyear";
+    }
+    return MESSAGES[raw] ? raw : "newyear";
+  }
 
   function storedTarget() {
     let raw = null;
@@ -120,6 +143,13 @@
     tick();
     schedule();
   });
+
+  /* Written once at load rather than every tick: the theme can only
+     change on the exhibit's own page, and coming back here is a
+     navigation, which re-runs this. The markup carries the default as
+     its no-JS fallback, so this only ever has to correct it. */
+  const messageEl = document.querySelector(".cd-mini-message");
+  if (messageEl) messageEl.textContent = MESSAGES[storedTheme()];
 
   tick();
   schedule();
