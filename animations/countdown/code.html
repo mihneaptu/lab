@@ -12,21 +12,26 @@
      behind them, and the message they were counting to rises into the
      space. Then two cannons of confetti, and a slow fall after it.
 
-     Set TARGET and MESSAGE at the top of the script and it is your
-     countdown. TARGET takes a month and a day rather than a full date
-     because it is written for an anniversary: it rolls to next year on
-     its own once the day has passed. Counting to a one-off moment
-     instead? Replace nextAnniversary() with a plain `new Date(...)`.
+     Set MONTH, DAY and MESSAGE at the top of the script and it is your
+     countdown. A month and a day rather than a full date, because it is
+     written for an anniversary: it rolls to next year on its own once the
+     day has passed. Counting to a one-off moment instead? Replace
+     nextAnniversary() with a plain `new Date(...)`.
 
-     To watch the ending without waiting for it, point TARGET at a moment
-     a few seconds out — which is all the exhibit version does, every
-     time. It has no real date at all: it counts a handful of seconds,
-     hands off, and rests on the arrival, because a page whose subject is
-     an animation should not spend four months showing you a wait. It also
+     The ending fires on the DAY, not at the instant the last second
+     falls — the two are the same moment at midnight, but it means the
+     celebration stays up for the whole of the day rather than for one
+     frame of it. To watch it now instead of waiting, set MONTH and DAY to
+     today's.
+
+     The exhibit version at the link above does only that ending, over and
+     over: it has no real date at all, counts a handful of seconds, hands
+     off, and rests on the arrival, because a page whose subject is an
+     animation should not spend four months showing you a wait. It also
      offers three endings to choose between, of which the confetti below
      is one; the picker that chooses them is exhibit furniture and is not
-     here. This is the countdown itself, with its two facts as constants,
-     and it is the version to take if you want to count to a real day.
+     here. This is the countdown itself, and it is the version to take if
+     you want to count to a real day.
 
      Every color and size is an inlined design token: retune :root and
      everything follows. This snippet is light-theme only — the exhibit
@@ -40,12 +45,8 @@
 <style>
   :root {
     --paper: oklch(0.967 0.005 85);      /* page background */
-    --surface: oklch(0.99 0.005 85);    /* the cells */
     --ink: oklch(0.218 0.006 85);
     --ink-muted: oklch(0.528 0.007 85);  /* unit labels, the date */
-    --line: oklch(0.918 0.006 85);       /* the frame, and the rules between cells */
-    --radius-lg: 16px;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
     --font-mono: "Spline Sans Mono", Consolas, monospace;
     /* The message is deliberately NOT a webfont: the look is weight 300,
        and the lightest sans guaranteed to be on hand is the one already
@@ -132,25 +133,29 @@
     to   { transform: none; }
   }
 
-  /* The 1px gaps let the frame's own background show through as the
-     rules between cells, so no per-cell borders double up at the seams.
-     The explicit width matters: without it the grid shrink-wraps to its
-     contents and the digits sit hard against the cell walls. */
+  /* No card, no border, no surface: the readout sits directly on the
+     paper. This started as a bordered frame with hairline rules between
+     the cells, and the frame was doing nothing the four labels weren't
+     already doing — it drew a picture of a clock instead of just being
+     one. Four numbers spaced evenly across a fixed width read as a
+     readout on their own.
+
+     What the frame WAS doing, and still has to be done, is set the
+     spacing. So the grid keeps its explicit width: left to shrink-wrap,
+     the four columns collapse to just wider than a digit and the numbers
+     bunch into the middle of the page. The subtraction keeps the readout
+     off the screen edges on a phone, where 34rem is wider than the
+     viewport. */
   .cd-clock {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     width: min(34rem, calc(100vw - 48px));
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
   }
 
+  /* The number and its label are one centered column. Left alignment
+     reads as a table of values; centered reads as four instruments side
+     by side, which is what this is. */
   .cd-unit {
-    background: var(--surface);
-    padding: 32px 8px 24px;
     text-align: center;
   }
 
