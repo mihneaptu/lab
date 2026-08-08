@@ -4,13 +4,19 @@
        easier than editing pre-tilted coordinates. The translate recenters
        the tilted shape in the square. -->
   <style>
-    .ink  { fill: #1a1a1a; }
-    .wall { fill: none; stroke: #1a1a1a; }
+    /* The lab's warm ink, as hex rather than the oklch() the stylesheets
+       use: a favicon is rendered by browser chrome, bookmark bars, and
+       the OS, which is a much wider and older set of renderers than the
+       page itself gets. These are the exact sRGB values of
+       oklch(0.218 0.006 85) and oklch(0.961 0.005 85) — if --ink ever
+       moves in tokens.css, move them here too. */
+    .ink  { fill: #1b1a17; }
+    .wall { fill: none; stroke: #1b1a17; }
     /* Favicons can't see the page's data-theme toggle; the OS/browser
        color scheme is the only signal available here. */
     @media (prefers-color-scheme: dark) {
-      .ink  { fill: #f2f2f2; }
-      .wall { stroke: #f2f2f2; }
+      .ink  { fill: #f4f2ee; }
+      .wall { stroke: #f4f2ee; }
     }
   </style>
   <g transform="translate(0 4) rotate(34 50 50)">

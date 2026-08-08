@@ -33,11 +33,11 @@
 
 <style>
   :root {
-    --paper: #f4f4f3;      /* page background */
-    --surface: #ffffff;    /* the cells */
-    --ink: #1a1a1a;
-    --ink-muted: #6b6b6b;  /* unit labels, the date */
-    --line: #e4e4e2;       /* the frame, and the rules between cells */
+    --paper: oklch(0.967 0.005 85);      /* page background */
+    --surface: oklch(0.99 0.005 85);    /* the cells */
+    --ink: oklch(0.218 0.006 85);
+    --ink-muted: oklch(0.528 0.007 85);  /* unit labels, the date */
+    --line: oklch(0.918 0.006 85);       /* the frame, and the rules between cells */
     --radius-lg: 16px;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
     --font-mono: "Spline Sans Mono", Consolas, monospace;
@@ -53,7 +53,7 @@
     --confetti-3: #5b8fd9;
     --confetti-4: #d4739e;
     --confetti-5: #5fb894;
-    --confetti-6: #1f1f1f;
+    --confetti-6: oklch(0.247 0.006 85);
   }
 
   * { box-sizing: border-box; }

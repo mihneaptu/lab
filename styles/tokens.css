@@ -30,47 +30,93 @@
 
   /* ------------------------------------------------------------------
      COLOR — light theme
-     A monochrome palette: neutral grays plus one "accent" that is
+     A monochrome palette: warm neutrals plus one "accent" that is
      simply near-black. Hierarchy comes from contrast and weight,
      not from hue.
+
+     WHY OKLCH: these are written as oklch(L C H) rather than hex
+     because the three numbers are the three things we actually reason
+     about — how light it is, how colorful, and which hue — and in
+     OKLCH they mean that independently. Equal steps of L are equal
+     steps of perceived brightness, and changing L doesn't drag the hue
+     with it the way HSL does. Hex hides all of that behind six digits
+     you can only compare by eye. (Baseline 2023; this stylesheet
+     already relies on :has(), color-mix(), and view transitions, so
+     the browser floor was here anyway.)
+
+     WHY WARM: every neutral below is pulled off pure gray toward one
+     shared warm hue. Pure #ffffff and 0-saturation grays are what a
+     browser gives you when nobody decided anything, and readers feel
+     that even when they can't name it — a warm cast reads as paper and
+     ink rather than as a screen. The amount is deliberately tiny
+     (C 0.005–0.008, roughly what Anthropic's cream carries): enough to
+     feel warm beside a true gray, never enough to look beige on its own.
+
+     This is NOT the start of a palette (see the note on --gold below).
+     A palette is hues carrying MEANING — a blue link, a red error, a
+     green success. This is a temperature on the neutrals: nothing here
+     says anything, it just stops the page from being a default. The
+     rule that color is only ever a reward for an interaction is intact.
      ------------------------------------------------------------------ */
 
-  --paper: #f4f4f3;        /* page background — a soft neutral, not stark white */
+  /* The one warm hue, in one place, so the whole ramp can be retuned by
+     editing a single number. 85° sits between a warm paper and a warm
+     brown; below ~70 the grays start reading pink, above ~100 green. */
+  --warm: 85;
+
+  --paper: oklch(0.967 0.005 var(--warm)); /* page background — warm, soft,
+                                              and pointedly not stark white */
 
   /* surface, both inks, and line also exist as FIXED aliases (-light /
      -dark) that never flip with the theme — the same pattern as the
      fixed shadow aliases below. One customer so far: the homepage
      sun-moon card, whose preview stage dresses in the OPPOSITE sky on
      hover so the morph it promises plays under its own light. */
-  --surface-light: #ffffff;  /* cards and specimen stages sit on pure white,
-                                so they read as "raised" above the paper */
-  --surface-dark: #1c1c1c;   /* in the dark, "raised" means "catches more
-                                light": cards sit lighter than the paper */
-  --ink-light: #1a1a1a;      /* main text — near-black. Pure #000 on light
-                                backgrounds is harsher than it needs to be */
-  --ink-dark: #f2f2f2;       /* near-white — pure #fff glows harshly on dark */
-  --ink-muted-light: #6b6b6b; /* secondary text — still passes contrast on paper */
-  --ink-muted-dark: #a3a3a3;
-  --line-light: #e4e4e2;     /* hairline borders and the dot grid */
-  --line-dark: #2a2a2a;
+  /* Surfaces stop just short of the top of the lightness range on
+     purpose: at L 1.0 a color is pure white and can hold no hue at all,
+     so a "warm white" has to sit a step below it. 0.99 is still clearly
+     raised above the paper's 0.967. */
+  --surface-light: oklch(0.99 0.005 var(--warm)); /* cards and specimen stages sit
+                                a step above the paper, so they read as "raised" */
+  --surface-dark: oklch(0.226 0.006 var(--warm));  /* in the dark, "raised" means
+                                "catches more light": cards sit lighter than paper */
+  --ink-light: oklch(0.218 0.006 var(--warm));     /* main text — near-black. Pure
+                                #000 on light backgrounds is harsher than it needs
+                                to be, and it can't carry the warm cast either */
+  --ink-dark: oklch(0.961 0.005 var(--warm));      /* near-white — pure #fff glows
+                                harshly on dark */
+  --ink-muted-light: oklch(0.528 0.007 var(--warm)); /* secondary text — still
+                                passes contrast on paper */
+  --ink-muted-dark: oklch(0.715 0.007 var(--warm));
+  /* Hairlines and the dot grid. These carry the most chroma in the ramp
+     (0.006–0.008): a border is a thin sliver of color against a large
+     field, so it needs more of the hue than a full-page background does
+     to read as the same temperature. */
+  --line-light: oklch(0.918 0.006 var(--warm));
+  --line-dark: oklch(0.285 0.008 var(--warm));
 
   --surface: var(--surface-light);
   --ink: var(--ink-light);
   --ink-muted: var(--ink-muted-light);
   --line: var(--line-light);
-  --line-strong: #b0b0ad;  /* borders that must be clearly visible
-                              (e.g. the secondary button outline) */
+  --line-strong: oklch(0.756 0.007 var(--warm)); /* borders that must be clearly
+                              visible (e.g. the secondary button outline) */
 
   /* The accent — near-black with a darkness ramp.
      Interactive elements get DARKER as you press them (hover → active),
      like a physical button moving away from the light. */
-  --accent: #262626;          /* resting state */
-  --accent-strong: #111111;   /* hover */
-  --accent-deep: #000000;     /* active (pressed) */
-  --accent-soft: #eaeaea;     /* faint tint, for hover on outline/ghost styles */
-  --accent-contrast: #ffffff; /* text ON the accent (primary button label) —
-                                 flips to dark in the dark theme, where the
-                                 accent itself is light */
+  --accent: oklch(0.269 0.006 var(--warm));        /* resting state */
+  --accent-strong: oklch(0.178 0.006 var(--warm)); /* hover */
+  /* Active (pressed). Bottoms out at L 0.12 rather than pure black for
+     the same reason the surfaces stop short of pure white: at L 0 there
+     is no hue left, and a pressed button that drops to a cold true black
+     would be the one moment the warm cast visibly breaks. */
+  --accent-deep: oklch(0.12 0.005 var(--warm));
+  --accent-soft: oklch(0.937 0.006 var(--warm));   /* faint tint, for hover on
+                                                      outline/ghost styles */
+  --accent-contrast: oklch(0.99 0.005 var(--warm)); /* text ON the accent (primary
+                                 button label) — flips to dark in the dark theme,
+                                 where the accent itself is light */
 
   /* The gold, reserved for the header's star easter egg. Nothing else
      may use it.
@@ -81,9 +127,19 @@
      end of the countdown and the confetti fires. Every one of those is
      something you had to do to see, none of them carries meaning the
      monochrome doesn't already carry, and all of them end on their own.
-     A hue that sits there permanently — a colored border, a tinted
-     surface, a status dot — is what starts a palette, and there isn't
-     one. That's the rule; the count of hues never was. */
+     A hue that sits there permanently and MEANS something — a blue
+     link, a red error, a green success, a status dot — is what starts
+     a palette, and there isn't one. That's the rule; the count of hues
+     never was.
+
+     The warm cast on the neutrals above is not an exception to this.
+     Temperature is not meaning: nothing on the page reads differently
+     because the paper leans warm, no element is picked out by it, and
+     there is still exactly one thing on a resting page that could be
+     called colored — this gold, and only while you're hovering the cat.
+     The test the rule is really asking is "could a reader mistake this
+     hue for a signal?", and at C 0.005 against a neutral gray the
+     honest answer is no. */
   --gold: #eab308;
 
   /* The confetti, and the reason it gets tokens instead of an array
@@ -99,7 +155,8 @@
   --confetti-3: #5b8fd9;  /* blue   */
   --confetti-4: #d4739e;  /* pink   */
   --confetti-5: #5fb894;  /* green  */
-  --confetti-6: #1f1f1f;  /* ink — the one that flips */
+  --confetti-6: oklch(0.247 0.006 var(--warm)); /* ink — the one that flips,
+                             and so the one that follows the warm cast */
 
   /* Shadows are for elevation, not decoration. Soft and barely-there:
      if you notice the shadow itself, it's too strong. Defined here (not
@@ -218,22 +275,27 @@
 
   color-scheme: dark;
 
-  --paper: #121212;        /* the page floor — dark, but not pure black,
-                              so shadows and lifted surfaces still register */
-  /* The hex values (and the reasoning behind them) live with the fixed
+  /* The page floor — dark, but not pure black, so shadows and lifted
+     surfaces still register. This is the token where the warm cast does
+     the most work: a true #121212 is the default every dark UI ships
+     with, and warming it is most of the difference between "dark mode"
+     and a room with a light in it. */
+  --paper: oklch(0.182 0.006 var(--warm));
+  /* The values (and the reasoning behind them) live with the fixed
      -light / -dark aliases in :root; this block only picks sides. */
   --surface: var(--surface-dark);
   --ink: var(--ink-dark);
   --ink-muted: var(--ink-muted-dark);
   --line: var(--line-dark);
-  --line-strong: #4d4d4d;
+  --line-strong: oklch(0.42 0.008 var(--warm));
 
   /* The accent ramp, mirrored: light resting state, dimmer as pressed. */
-  --accent: #ececec;
-  --accent-strong: #d6d6d6;
-  --accent-deep: #bfbfbf;
-  --accent-soft: #262626;
-  --accent-contrast: #111111; /* dark label on the light button */
+  --accent: oklch(0.943 0.006 var(--warm));
+  --accent-strong: oklch(0.876 0.007 var(--warm));
+  --accent-deep: oklch(0.805 0.007 var(--warm));
+  --accent-soft: oklch(0.269 0.006 var(--warm));
+  --accent-contrast: oklch(0.178 0.006 var(--warm)); /* dark label on the light
+                                                        button */
 
   /* The stars' gold, a notch brighter so it reads on the dark paper */
   --gold: #facc15;
@@ -242,7 +304,7 @@
      enough to read on either paper and stay as they are — recoloring
      them per theme would make the celebration two different
      celebrations. */
-  --confetti-6: #f2f2f2;
+  --confetti-6: oklch(0.961 0.005 var(--warm));
 
   /* Dark shadows can't read on a dark floor — black on near-black is
      invisible. So elevation flips with the light (see the note above:

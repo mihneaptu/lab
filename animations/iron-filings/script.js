@@ -69,7 +69,8 @@ if (canvas && canvas.getContext) {
   let pulseDir = 1;
   let rafId = null;
   let lastT = 0;
-  let ink = "#1a1a1a";
+  let ink = "#1b1a17";       /* only a fallback: readInk() below replaces this
+                                with the live --ink before the first frame */
   let reach = 1;             /* the distance the gradient is measured against */
 
   /* The field draws in the theme's own ink rather than a colour of its
