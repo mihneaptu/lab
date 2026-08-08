@@ -271,7 +271,12 @@ body.is-done .cd-message {
    keyboard can still tab to is a trap, and opacity alone leaves exactly
    that. The delay holds it on screen for the full fade, then takes it
    out of the tab order. */
-body.is-replaying .cd-replay {
+/* The setup fields go with it, and for the same reasons: they have
+   nothing to offer while the handoff is playing, and a keyboard must not
+   be able to tab into something the eye can't see. Listed together so the
+   two can never drift into leaving on different clocks. */
+body.is-replaying .cd-replay,
+body.is-replaying .cd-setup {
   opacity: 0;
   visibility: hidden;
   transition: opacity 260ms ease, visibility 0s linear 260ms;
@@ -288,6 +293,110 @@ body.is-replaying .cd-replay {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* --- The setup fields ---------------------------------------------------
+
+   The exhibit's two facts, as controls. They sit a step quieter than the
+   replay button — that button is the one thing telling a visitor the
+   payoff can be seen on demand, and it should still be the first thing
+   found down here. These wait to be looked for.
+
+   Laid out as a row that wraps: side by side where there's room, stacked
+   on a phone, without a media query deciding where that happens. */
+.cd-setup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3) var(--space-5);
+  /* Pulled up against the replay button, because the stage's own gap is
+     sized to separate the readout from its controls as a group — left at
+     that width these would read as a third, unrelated thing rather than
+     as the button's neighbours. */
+  margin-top: calc(var(--space-6) - var(--space-7));
+  /* The ARRIVAL half of the pairing, flipped at 0s so the fade has
+     something visible to fade; the departure, with the delay, is on the
+     .is-replaying rule above. Same arrangement as .cd-replay. */
+  transition: opacity 260ms ease, visibility 0s;
+}
+
+.cd-setup-field {
+  margin: 0;
+}
+
+/* Both fields, styled as one. Underlined rather than boxed: a box here
+   would be the heaviest object on a page whose whole composition is
+   type on empty paper, and the line is enough to say "you can type in
+   this" once the caret is in it. */
+.cd-set-date,
+.cd-set-message {
+  /* The lab's mono, said explicitly: form controls do NOT inherit the
+     page's font — the UA sheet gives them a system default, so leaving
+     this out is what makes a date field look like it came from a
+     different website. */
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0; /* iOS rounds inputs by default */
+  padding: var(--space-1) var(--space-2);
+  transition: color var(--speed-color) ease,
+              border-color var(--speed-color) ease;
+}
+
+.cd-set-message {
+  width: 22ch; /* a shade over .cd-message's 20ch measure, so what fits
+                  here is what will fit up there */
+  max-width: 100%;
+}
+
+.cd-set-date:hover,
+.cd-set-message:hover,
+.cd-set-date:focus,
+.cd-set-message:focus {
+  color: var(--ink);
+  border-bottom-color: var(--line-strong);
+}
+
+/* The ring goes on the border rather than around the box: an outline on
+   a field this wide draws a rectangle in a composition that has no other
+   rectangles left by this point in the page. */
+.cd-set-date:focus-visible,
+.cd-set-message:focus-visible {
+  outline: none;
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent); /* doubles the line's weight
+                                          without moving anything */
+}
+
+/* The placeholder is a hint, not content, and must not be mistaken for a
+   typed value — but it still has to be readable, so it stops well short
+   of the faint end. */
+.cd-set-message::placeholder {
+  color: color-mix(in srgb, var(--ink-muted) 70%, var(--paper));
+  opacity: 1; /* Firefox dims placeholders again on top of the color */
+}
+
+/* The calendar button the browser draws inside the field. Left as the
+   platform's own control — it opens the platform's own picker, and a
+   visitor knows their picker better than anything this page could draw —
+   but recolored to the theme's ink, since the default is a fixed dark
+   glyph that disappears against the dark paper. */
+.cd-set-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity var(--speed-color) ease;
+}
+
+.cd-set-date:hover::-webkit-calendar-picker-indicator,
+.cd-set-date:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+[data-theme="dark"] .cd-set-date::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
 
 /* --- Small screens ------------------------------------------------------ */

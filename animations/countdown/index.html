@@ -139,9 +139,10 @@
         <p class="cd-date"></p>
       </div>
 
-      <!-- Filled by script.js from the MESSAGE constant, so the exhibit's
-           two configurable facts (what it counts to, what it says on
-           arrival) sit together at the top of one file. -->
+      <!-- Written by script.js at the moment of arrival, from whatever is
+           in the message field below (or its fallback). Not filled at load
+           because the sentence is the visitor's and can change between one
+           handoff and the next. -->
       <p class="cd-message"></p>
     </div>
 
@@ -157,6 +158,37 @@
          "replay the handoff" from the countdown, "back to the countdown"
          once the message is up. script.js owns the wording. -->
     <button class="cd-replay" type="button"></button>
+
+    <!-- The exhibit's two facts, handed to the visitor. This page used to
+         hard-code a date and a sentence; now it counts to whatever you
+         put here and says whatever you tell it to, remembered in
+         localStorage between visits.
+
+         A <div>, not a <form>: there is nothing to submit and no server
+         to submit it to. Each field applies itself as you change it, so a
+         form would only add an Enter key that reloads the page.
+
+         The labels are real labels, hidden visually — the fields' own
+         placeholders read as labels to someone looking at the page, but a
+         placeholder is not an accessible name, and it disappears the
+         moment there is a value. Same .visually-hidden the <h1> uses. -->
+    <div class="cd-setup">
+      <p class="cd-setup-field">
+        <label class="visually-hidden" for="cd-date">Count down to</label>
+        <!-- min is set by script.js, from today at page load: "today" is
+             not a constant, so baking it into the markup would leave a
+             tab open overnight enforcing yesterday's floor. -->
+        <input class="cd-set-date" id="cd-date" type="date">
+      </p>
+      <p class="cd-setup-field">
+        <label class="visually-hidden" for="cd-message">Say on arrival</label>
+        <!-- Capped where .cd-message's 20ch measure stops holding: past
+             about this length the arrival sentence stops being a sentence
+             and becomes a paragraph on an empty stage. -->
+        <input class="cd-set-message" id="cd-message" type="text" maxlength="40"
+               autocomplete="off" spellcheck="false">
+      </p>
+    </div>
   </main>
 
   <script src="script.js"></script>

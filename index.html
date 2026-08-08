@@ -691,7 +691,12 @@
                 <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="m">--</span><span class="cd-mini-name">m</span></span></span>
                 <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="s">--</span><span class="cd-mini-name">s</span></span></span>
               </span>
-              <span class="cd-mini-message">Happy birthday!</span>
+              <!-- The exhibit's fallback sentence (DEFAULT_MESSAGE in its
+                   script.js), not a live read of whatever the visitor has
+                   typed: the card is a miniature of what the exhibit DOES,
+                   and this is the one line of it that has to hold still
+                   while the card is only 108px tall. -->
+              <span class="cd-mini-message">Time's up!</span>
             </span>
           </div>
           <div class="card-body">

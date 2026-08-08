@@ -20,17 +20,48 @@
 
   /* --- The two facts ---------------------------------------------------
 
-     Everything specific to THIS countdown is here. Point them somewhere
-     else and the rest of the file doesn't care: it counts to a date and
-     says a sentence, and has no opinion about which.
+     This exhibit used to hard-code them: a month, a day, and a sentence,
+     all three somebody else's. That made the payoff fire once a year on a
+     date no visitor had any reason to care about, and put a real person's
+     birthday on a public page.
 
-     The month is 0-indexed, the way Date takes it — 6 is July. A month
-     and a day rather than a full date because this is an anniversary: it
-     happens again next year, and hard-coding a year would leave the page
-     counting to a moment in the past from the 27th onward. */
-  const MONTH = 6;
-  const DAY = 26;
-  const MESSAGE = "Happy birthday!";
+     Now the visitor owns both. They live in localStorage, they are set
+     from the two fields under the stage, and either can be absent — a
+     page with nothing set has nothing to count to, which is a state this
+     file has to handle rather than paper over.
+
+     What's left here is only the fallback sentence, used when a target
+     has been set but the message field was left empty, and shown as that
+     field's placeholder so the default is never a surprise. */
+  const DEFAULT_MESSAGE = "Time's up!";
+
+  /* --- Storage ---------------------------------------------------------
+
+     Reads and writes are wrapped because storage access can THROW, not
+     merely come back empty: a locked-down profile or a blocked third-
+     party context refuses outright. The theme bootstrap in this page's
+     <head> guards the same way and for the same reason. An uncaught throw
+     here would take the whole exhibit down over a preference. */
+  const KEY_TARGET = "countdown:target";
+  const KEY_MESSAGE = "countdown:message";
+
+  function readStored(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStored(key, value) {
+    try {
+      if (value) localStorage.setItem(key, value);
+      else localStorage.removeItem(key);
+    } catch {
+      /* The setting is honored for this session and simply isn't
+         remembered for the next one. Nothing here is worth an error. */
+    }
+  }
 
   /* How far out the replay button puts its target. Enough to show the
      whole arc rather than just the ending — the dimmed units and the
@@ -52,12 +83,48 @@
   const messageEl = document.querySelector(".cd-message");
   const readingEl = document.querySelector(".cd-reading");
   const replayEl = document.querySelector(".cd-replay");
+  const dateInput = document.querySelector(".cd-set-date");
+  const messageInput = document.querySelector(".cd-set-message");
   const nums = {};
   document.querySelectorAll(".cd-num").forEach((el) => {
     nums[el.dataset.unit] = el;
   });
 
-  messageEl.textContent = MESSAGE;
+  /* --- What the visitor has chosen -------------------------------------
+
+     customTarget is a Date at local midnight, or null when nothing is
+     set. Null is a real state with its own behaviour, not a stand-in for
+     a default: it is what makes the page open into the handoff. */
+  let customTarget = null;
+  let customMessage = "";
+
+  /* Parses the yyyy-mm-dd an <input type="date"> yields, in LOCAL time.
+     `new Date("2027-01-01")` would not do: a bare date string is parsed
+     as UTC, which lands the target an hour or two off local midnight and
+     puts the whole count out by that much for anyone east or west of
+     Greenwich. Splitting the parts and handing them to the constructor
+     asks for local midnight explicitly.
+
+     Returns null for anything that isn't a real date, so a hand-edited
+     storage value or a browser that hands back something unexpected
+     falls back to "nothing set" rather than an Invalid Date that would
+     make every reading downstream NaN. */
+  function parseDate(value) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+    if (!m) return null;
+    const [, y, mo, d] = m.map(Number);
+    const t = new Date(y, mo - 1, d, 0, 0, 0, 0);
+    /* Rejects the overflow Date performs silently: month 13 or day 32
+       would otherwise roll into the next month and quietly count to a
+       day nobody asked for. */
+    return t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d
+      ? t
+      : null;
+  }
+
+  function messageText() {
+    return customMessage || DEFAULT_MESSAGE;
+  }
 
   /* Checked live at the moment of use rather than latched at load, so
      flipping the OS setting mid-session is honored — the same reading
@@ -92,23 +159,25 @@
      same countdown and cannot drift apart in behaviour. */
   let demoTarget = null;
 
-  /* The whole of the day counts as the day itself — a birthday is not
-     over at 00:00:01. This is deliberately asked of the REAL calendar
-     only, never of the demo, because the replay button needs to know
-     whether there is a countdown to go back to. */
-  function realIsDone() {
-    const now = new Date();
-    return now.getMonth() === MONTH && now.getDate() === DAY;
+  /* Is there a live countdown to be at, or to go back to? Asked of the
+     visitor's own target only, never of the demo — the replay button
+     needs to know whether returning is a thing it can honestly offer. */
+  function realIsLive() {
+    return customTarget !== null && Date.now() < +customTarget;
   }
 
-  function nextAnniversary() {
-    const now = new Date();
-    const t = new Date(now.getFullYear(), MONTH, DAY, 0, 0, 0, 0);
-    return t <= now
-      ? new Date(now.getFullYear() + 1, MONTH, DAY, 0, 0, 0, 0)
-      : t;
-  }
+  /* Three states, in priority order.
 
+     A rehearsal outranks everything: it is the visitor asking to see the
+     handoff now, over whatever the page was otherwise doing.
+
+     Then the visitor's own target, if they have set one.
+
+     Then IDLE — nothing set, nothing to count to. The old version had no
+     equivalent, because a hard-coded anniversary is never absent. It
+     matters because it is the state a first visit is in, and the one the
+     page answers by playing the handoff instead of showing a clock
+     counting to nothing. */
   function state() {
     if (demoTarget !== null) {
       return Date.now() >= demoTarget
@@ -116,9 +185,11 @@
         : { done: false, target: new Date(demoTarget), demo: true };
     }
 
-    return realIsDone()
-      ? { done: true }
-      : { done: false, target: nextAnniversary(), demo: false };
+    if (customTarget === null) return { idle: true };
+
+    return realIsLive()
+      ? { done: false, target: customTarget, demo: false }
+      : { done: true };
   }
 
   /* --- The confetti ---------------------------------------------------- */
@@ -376,7 +447,10 @@
   function finish() {
     body.classList.remove("is-final");
     body.classList.add("is-done");
-    announce(MESSAGE);
+    /* Written at arrival rather than once at load: the sentence is the
+       visitor's now, and it can have changed since the last handoff. */
+    messageEl.textContent = messageText();
+    announce(messageText());
     /* The label is rewritten while the button is still invisible, so the
        word swap happens under cover and what fades back in is already
        offering the right thing. */
@@ -439,6 +513,22 @@
 
   function tick() {
     const st = state();
+
+    /* Nothing set, so there is no count to render and no arrival to play.
+       The page answers this by rehearsing — which is what makes a first
+       visit open into the handoff rather than a clock pointed at nothing.
+
+       Self-healing rather than left to the callers: this is also the
+       state a visitor lands in by CLEARING their date, and having the one
+       place that renders the count decide what an empty count means beats
+       remembering to start a rehearsal at every site that can empty it.
+       No recursion — startRehearsal() sets demoTarget, so the tick it
+       makes reads as a demo, never as idle. */
+    if (st.idle) {
+      firstPass = false;
+      if (!done) startRehearsal();
+      return;
+    }
 
     if (st.done) {
       celebrate(firstPass);
@@ -528,11 +618,12 @@
 
   /* The button offers whichever of its two jobs makes sense from here.
      "Back to the countdown" is only honest when there IS one to go back
-     to: on the day itself the real state is the celebration, so the
-     button keeps offering the replay instead of pretending it can
-     return somewhere that doesn't exist. */
+     to. Two ways there isn't: the visitor's date has arrived, so the
+     celebration IS the real state; or they never set one, so the page has
+     only ever had the rehearsal. Both keep the button offering the
+     replay rather than promising a countdown that doesn't exist. */
   function canReturn() {
-    return done && !realIsDone();
+    return done && realIsLive();
   }
 
   function updateReplay() {
@@ -540,26 +631,103 @@
     if (replayEl.textContent !== label) replayEl.textContent = label;
   }
 
-  replayEl.addEventListener("click", () => {
-    const returning = canReturn();
-    demoTarget = returning ? null : Date.now() + DEMO_SECONDS * 1000;
+  /* Put the page into a state and start the clock again. `demo` true
+     stages a rehearsal a few seconds out; false hands the page back to
+     whatever state() says the real situation is.
+
+     Shared by the replay button, the two setup fields, and the page's own
+     opening move. Auto-play on load is this function, not a second
+     implementation of it — the one thing that must not drift is what a
+     handoff looks like. */
+  function restart(demo) {
+    demoTarget = demo ? Date.now() + DEMO_SECONDS * 1000 : null;
 
     reset();
     shownDate = null;   /* the date line has to be re-decided */
     lastAnnounced = null;
-    firstPass = false;  /* a replay is never a page load: it plays the
-                           full choreography, which is the entire point */
+    firstPass = false;  /* a rehearsal is never a page load: it plays the
+                           full choreography, which is the entire point.
+                           This is the difference between the handoff
+                           ANIMATING and the page simply arriving already
+                           finished — see celebrate()'s fromLoad. */
 
     /* Only a rehearsal takes the control off screen, and only AFTER
        reset() — which clears the flag along with everything else, so
        setting it first would immediately undo it. Going back to the
        countdown is a state change, not a performance: the button stays
        put and simply relabels. */
-    if (!returning) body.classList.add("is-replaying");
+    if (demo) body.classList.add("is-replaying");
 
     tick();
     scheduleTick();
+  }
+
+  function startRehearsal() {
+    restart(true);
+  }
+
+  replayEl.addEventListener("click", () => {
+    restart(!canReturn());
   });
+
+  /* --- The two setup fields ---------------------------------------------
+
+     A date and a sentence, both optional, both remembered. They sit under
+     the replay button and step aside with it while a rehearsal plays. */
+
+  /* Today in the yyyy-mm-dd the date input speaks, built from local parts
+     rather than toISOString() — that converts to UTC first, so anyone far
+     enough east or west gets yesterday or tomorrow as their floor. */
+  function todayValue() {
+    const n = new Date();
+    return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`;
+  }
+
+  /* A past date can only ever show the arrival, which the replay button
+     already offers on demand — so the floor is today, enforced by the
+     input where the browser can say so in its own words, and re-checked
+     on read because `min` is a validation hint, not a guarantee. */
+  function applyDateInput() {
+    const picked = parseDate(dateInput.value);
+    const floor = parseDate(todayValue());
+
+    if (picked !== null && floor !== null && picked < floor) {
+      /* Say why, in the browser's own voice and language, rather than
+         silently discarding it. */
+      dateInput.setCustomValidity("Pick a date that hasn't happened yet.");
+      dateInput.reportValidity();
+      return;
+    }
+    dateInput.setCustomValidity("");
+
+    customTarget = picked;
+    writeStored(KEY_TARGET, picked ? dateInput.value : null);
+
+    /* Setting a date hands the page to that countdown; clearing it leaves
+       nothing to count, which tick() answers by rehearsing. Either way
+       the page re-decides from state() rather than being told. */
+    restart(false);
+  }
+
+  function applyMessageInput() {
+    customMessage = messageInput.value.trim();
+    writeStored(KEY_MESSAGE, customMessage);
+
+    /* If the message is already on screen, change it under the visitor's
+       cursor — retyping it and watching nothing happen until the next
+       handoff would read as the field being broken. */
+    if (done) {
+      messageEl.textContent = messageText();
+      announce(messageText());
+    }
+  }
+
+  /* `change` rather than `input` for the date: `input` fires on every
+     keystroke inside the field, so typing a year turns 0002, 0020, 0202
+     into three restarts before 2027 lands. The message takes `input`,
+     because there is no half-typed sentence that costs anything. */
+  dateInput.addEventListener("change", applyDateInput);
+  messageInput.addEventListener("input", applyMessageInput);
 
   /* --- The world changing under it -------------------------------------- */
 
@@ -596,9 +764,47 @@
     if (parts.length) wake();
   });
 
+  /* --- Opening move -----------------------------------------------------
+
+     Restore what the visitor chose last time, dress the two fields in it,
+     and then let the page decide what it is.
+
+     A saved target that has since gone past is dropped rather than kept:
+     it would open the page on a celebration for something that finished
+     weeks ago, with a date line naming a day in the past. Clearing it
+     puts the page back where a first visit starts.
+
+     The date's floor is set here rather than in the markup because
+     "today" is not a constant — a tab left open overnight would otherwise
+     keep yesterday's floor. */
+  function restore() {
+    const saved = parseDate(readStored(KEY_TARGET));
+    const floor = parseDate(todayValue());
+
+    customTarget = saved !== null && floor !== null && saved >= floor ? saved : null;
+    if (saved !== null && customTarget === null) writeStored(KEY_TARGET, null);
+
+    customMessage = (readStored(KEY_MESSAGE) || "").trim();
+
+    dateInput.min = todayValue();
+    dateInput.value = customTarget
+      ? `${customTarget.getFullYear()}-${pad(customTarget.getMonth() + 1)}-${pad(customTarget.getDate())}`
+      : "";
+    messageInput.value = customMessage;
+    messageInput.placeholder = DEFAULT_MESSAGE;
+  }
+
   readPalette();
   layout();
+  restore();
   updateReplay();
+
+  /* With nothing set the first tick reads idle and rehearses on its own,
+     which IS the opening handoff — so there is no separate auto-play
+     branch here to keep in step with the button. With a date set, the
+     same call simply starts counting to it: the visitor's own countdown
+     is what they came back for, and replaying the demo over it on every
+     load would be noise. */
   tick();
   scheduleTick();
 })();
