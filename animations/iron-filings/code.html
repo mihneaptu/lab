@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron filings</title>
+
+  <!-- The iron filings, standalone — from mihneaptu.github.io/lab (MIT).
+
+       A few hundred short strokes on a grid, each one wanting to lie
+       along the line that points at your cursor, and each one getting
+       there on its own angular spring. So this is not one animation: it
+       is one input read by three hundred independent bodies.
+
+       The wave you see trailing the pointer is emergent, not drawn.
+       A filing's spring is stiffer the closer it sits to the pointer,
+       so the near ones snap round while the far ones follow lazily, and
+       sweeping the cursor drags a ripple of rotation behind it. Nothing
+       in the script describes a wave; the wave is what a stiffness
+       gradient looks like from outside. Clicking adds the second act —
+       a ring that travels outward at a fixed speed, spins whatever it
+       passes over, and leaves it to settle.
+
+       The knobs worth turning, all at the top of the script:
+         SPACING            how dense the field is (bigger = fewer, larger cells)
+         LEN / LEN_GAIN     a filing's resting length, and how much it
+                            stretches right under the pointer
+         STIFF_NEAR/_FAR    the gradient, and so the whole effect. Flatten
+                            these two toward each other and the ripple
+                            disappears, leaving a field that merely points
+         DAMPING            how quickly a disturbed filing stops swinging
+         PULSE_*            the click ring: how fast it travels, how wide
+                            its crest is, and how hard it hits
+
+       The exhibit version also flips its ink with the lab's light/dark
+       switch and buzzes an Android phone through a shared haptics
+       module; this snippet keeps the field itself and is light-theme
+       only. Every color and size is an inlined design token: retune
+       :root and everything follows. -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --paper: oklch(0.967 0.005 85);      /* page background */
+      --ink: oklch(0.218 0.006 85);        /* the strokes — read back out of
+                                              the cascade by the script, see
+                                              readInk() below */
+      --ink-muted: oklch(0.528 0.007 85);  /* the hint under the field */
+      --font-mono: "Spline Sans Mono", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;  /* fallback for browsers without dvh */
+      min-height: 100dvh; /* the VISIBLE viewport on mobile — 100vh includes
+                             the space behind the retractable URL bar */
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: 24px;
+      padding: 24px;
+      background: var(--paper);
+      /* Paired with the background on purpose. Without it, any text added
+         to this snippet inherits the browser's own default black, which is
+         the one cold pure-neutral the palette above exists to avoid. */
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* No card, no border, no surface: the field sits directly on the
+       paper. A frame around it would read as a picture of a field rather
+       than as the thing itself, and the strokes already draw their own
+       edges. */
+    .filings {
+      display: block;
+      width: min(92vw, 720px);
+      height: min(62vh, 520px);
+
+      /* The field takes the whole gesture. Without this a drag across the
+         strokes is eaten as a failed scroll on touch, and the one thing
+         the exhibit asks you to do stops working on a phone. */
+      touch-action: none;
+
+      /* The pointer is the magnet, so say so. A crosshair reads as "this
+         position matters" where an arrow reads as "click something". */
+      cursor: crosshair;
+    }
+
+    /* Centred under the field rather than pinned to an edge, so it reads
+       as the field's caption and not as chrome. It is the only thing
+       telling a visitor what to do, so it is the one piece of type here. */
+    .filings-hint {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--ink-muted);
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    /* On a phone the hint is competing with a much smaller field, and the
+       pointer the copy talks about does not exist. Touch gets its own
+       wording from the script; here it only needs room. */
+    @media (max-width: 30rem) {
+      .filings { height: min(56vh, 420px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- One canvas, a few hundred strokes. Every stroke is a separate
+       spring, which is the whole point; drawing them as DOM nodes would
+       spend the frame budget on layout instead of on physics.
+
+       role="img" with a label because a canvas is otherwise a blank to
+       anything not looking at it: the description is what the picture
+       would say if it could be read. -->
+  <canvas class="filings" role="img"
+          aria-label="A field of short strokes that turn to face the pointer."></canvas>
+
+  <p class="filings-hint">move to comb the field &middot; click to send a pulse</p>
+
+  <script>
+    const canvas = document.querySelector(".filings");
+
+    if (canvas && canvas.getContext) {
+      const ctx = canvas.getContext("2d");
+      const hint = document.querySelector(".filings-hint");
+      const calm = matchMedia("(prefers-reduced-motion: reduce)");
+
+      /* ---- the numbers ------------------------------------------------- */
+
+      const SPACING = 34;      /* px between filings, both axes */
+      const LEN = 14;          /* a filing's resting length */
+      const LEN_GAIN = 0.55;   /* how much longer it gets right under the pointer */
+      const WIDTH = 1.5;
+
+      /* The stiffness gradient IS the effect. Near the pointer a filing is
+         held tightly and turns almost instantly; out at the corners it is
+         held loosely and takes its time. Flatten these two toward each
+         other and the ripple disappears, leaving a field that just points. */
+      const STIFF_NEAR = 150;
+      const STIFF_FAR = 26;
+      const DAMPING = 7.5;
+
+      /* A pulse lives in the ring-down, not in the kick. At the resting
+         damping the springs eat a disturbance almost as fast as it
+         arrives, so the front crosses the field and leaves barely a tilt
+         behind it. Slackening the springs while a ring is travelling lets
+         the filings it passed keep swinging in its wake, which is the part
+         worth watching. */
+      const RING_DAMPING = 2.2;
+
+      /* and a ceiling, so a filing caught square by the crest spins fast
+         rather than infinitely */
+      const V_MAX = 16;
+
+      /* The front has to be narrow relative to the field or it stops being
+         a front: at a third of the field's width it reaches everything at
+         once and the whole grid just tilts together. Narrow and slow
+         enough to watch, strong enough that a filing it crosses turns most
+         of the way over before the spring hauls it back. */
+      const PULSE_SPEED = 520; /* px/s the ring travels */
+      const PULSE_WIDTH = 55;  /* px from crest to nothing */
+      const PULSE_ACCEL = 110; /* angular kick at the crest */
+
+      /* ---- state -------------------------------------------------------- */
+
+      let filings = [];
+      let w = 0, h = 0;        /* CSS pixels, cached: reading layout per frame
+                                  is the classic way to lose the frame */
+      let px = 0, py = 0;
+      let hasPointer = false;
+      let pulses = [];
+      let pulseDir = 1;
+      let rafId = null;
+      let lastT = 0;
+      let ink = "#1b1a17";     /* only a fallback: readInk() below replaces
+                                  this with the live --ink before the first
+                                  frame ever draws */
+      let reach = 1;           /* the distance the gradient is measured against */
+
+      /* A canvas is the one surface a stylesheet cannot reach: strokeStyle
+         is a string handed to a drawing call, not a property the cascade
+         can set. So the field reaches back the other way and reads --ink
+         out of :root, which keeps the promise the rest of this snippet
+         makes — retune the tokens at the top and everything follows,
+         including the part that is painted rather than styled.
+
+         The exhibit re-reads this on every theme flip, because there the
+         ink genuinely changes underneath it. Here there is one sky and one
+         ink, so reading it once during startup is the whole job: no
+         observer, no listener, nothing left running to keep a colour in
+         step with a switch this page does not have. Set --ink to something
+         else after load and the field will keep its old colour until the
+         next resize — call readInk() yourself if you ever want that. */
+      function readInk() {
+        const v = getComputedStyle(document.documentElement)
+          .getPropertyValue("--ink")
+          .trim();
+        if (v) ink = v;
+      }
+
+      /* A filing is a line segment, so it has no head and no tail: turned
+         through half a circle it is the same filing again. Measuring the
+         shortest way round in HALF turns is what stops a stroke from making
+         a pointless 180° journey to reach a pose it was already in. */
+      function shortest(d) {
+        const half = Math.PI;
+        d = d % half;
+        if (d > half / 2) d -= half;
+        if (d < -half / 2) d += half;
+        return d;
+      }
+
+      function layout() {
+        const rect = canvas.getBoundingClientRect();
+        w = rect.width;
+        h = rect.height;
+
+        /* Cap the backing store at 2x. Past that the extra pixels cost real
+           fill rate on a phone and buy nothing the eye can find on a
+           hairline stroke. */
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const cols = Math.max(2, Math.floor(w / SPACING));
+        const rows = Math.max(2, Math.floor(h / SPACING));
+        const ox = (w - (cols - 1) * SPACING) / 2;
+        const oy = (h - (rows - 1) * SPACING) / 2;
+
+        /* Rebuilt rather than resized: a filing's angle belongs to a
+           position, and after a resize these are different positions.
+           Starting flat and letting them turn back is honest, and it is
+           also the entrance. */
+        filings = [];
+        for (let j = 0; j < rows; j++) {
+          for (let i = 0; i < cols; i++) {
+            filings.push({ x: ox + i * SPACING, y: oy + j * SPACING, a: 0, v: 0, near: 0 });
+          }
+        }
+
+        reach = Math.hypot(w, h) / 2;
+      }
+
+      /* ---- the loop ------------------------------------------------------ */
+
+      function wake() {
+        if (calm.matches) {
+          settle();
+          return;
+        }
+        if (rafId === null) {
+          lastT = performance.now();
+          rafId = requestAnimationFrame(tick);
+        }
+      }
+
+      function tick(t) {
+        /* clamp dt so a throttled background tab cannot slingshot the field */
+        const dt = Math.min((t - lastT) / 1000, 0.032);
+        lastT = t;
+
+        let alive = false;
+
+        for (const p of pulses) p.r += PULSE_SPEED * dt;
+        pulses = pulses.filter((p) => p.r < reach * 2 + PULSE_WIDTH);
+        if (pulses.length) alive = true;
+
+        /* loose while a ring is out, tight again once it has left the field */
+        const damping = pulses.length ? RING_DAMPING : DAMPING;
+
+        for (const f of filings) {
+          let target = 0;
+          let near = 0;
+
+          /* With no pointer on the field there is no magnet, so the filings
+             relax flat and parallel — the same rest they were laid out in. */
+          if (hasPointer) {
+            const dx = px - f.x;
+            const dy = py - f.y;
+            target = Math.atan2(dy, dx);
+            near = 1 - Math.min(Math.hypot(dx, dy) / reach, 1);
+          }
+          f.near = near;
+
+          const stiff = STIFF_FAR + (STIFF_NEAR - STIFF_FAR) * near * near;
+          const diff = shortest(target - f.a);
+
+          /* semi-implicit Euler: velocity from the forces first, then move.
+             Stabler than the naive order at the stiffnesses used here. */
+          f.v += (stiff * diff - damping * f.v) * dt;
+
+          for (const p of pulses) {
+            const edge = Math.abs(Math.hypot(f.x - p.x, f.y - p.y) - p.r);
+            if (edge < PULSE_WIDTH) {
+              /* cosine crest: the kick swells and fades as the ring crosses,
+                 so the wavefront has a shape instead of an edge */
+              const crest = Math.cos((edge / PULSE_WIDTH) * (Math.PI / 2));
+              f.v += p.dir * PULSE_ACCEL * crest * crest * dt;
+            }
+          }
+
+          if (f.v > V_MAX) f.v = V_MAX;
+          else if (f.v < -V_MAX) f.v = -V_MAX;
+
+          f.a += f.v * dt;
+
+          if (Math.abs(f.v) > 0.01 || Math.abs(diff) > 0.002) alive = true;
+        }
+
+        draw();
+        rafId = alive ? requestAnimationFrame(tick) : null;
+      }
+
+      /* Under reduced motion there is no spring and no ring: the field
+         still answers the pointer, it just arrives already turned. The
+         preference is checked live, so flipping it mid-visit is honoured. */
+      function settle() {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        pulses = [];
+        for (const f of filings) {
+          if (hasPointer) {
+            const dx = px - f.x;
+            const dy = py - f.y;
+            f.a = Math.atan2(dy, dx);
+            f.near = 1 - Math.min(Math.hypot(dx, dy) / reach, 1);
+          } else {
+            f.a = 0;
+            f.near = 0;
+          }
+          f.v = 0;
+        }
+        draw();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = ink;
+        ctx.lineWidth = WIDTH;
+        ctx.lineCap = "round";
+
+        /* One path for the whole field, one stroke call. Per-filing strokes
+           would be three hundred state changes a frame for a picture that
+           is all the same colour. */
+        ctx.beginPath();
+        for (const f of filings) {
+          const half = (LEN * (1 + LEN_GAIN * f.near * f.near)) / 2;
+          const cx = Math.cos(f.a) * half;
+          const cy = Math.sin(f.a) * half;
+          ctx.moveTo(f.x - cx, f.y - cy);
+          ctx.lineTo(f.x + cx, f.y + cy);
+        }
+        ctx.stroke();
+      }
+
+      /* ---- input --------------------------------------------------------- */
+
+      /* offsetX/offsetY are already relative to the canvas's own box, which
+         saves measuring it on every move. */
+      canvas.addEventListener("pointermove", (e) => {
+        px = e.offsetX;
+        py = e.offsetY;
+        hasPointer = true;
+        wake();
+      });
+
+      canvas.addEventListener("pointerleave", () => {
+        hasPointer = false;
+        wake();
+      });
+
+      function pulseAt(x, y) {
+        pulses.push({ x, y, r: 0, dir: pulseDir });
+        pulseDir *= -1; /* the next one turns the other way, so a second click
+                           reads as a new event rather than a repeat */
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        px = e.offsetX;
+        py = e.offsetY;
+        hasPointer = true;
+
+        if (calm.matches) {
+          settle();
+          return;
+        }
+
+        pulseAt(px, py);
+
+        /* One firm beat, and only for a real finger: a mouse cannot feel
+           it and a phone that vibrates on a hover would be lying about
+           what happened. Reduced motion is treated as reduced SENSATION
+           too — but that case has already returned above. iPhones never
+           shipped navigator.vibrate, so this is silently an Android-only
+           courtesy; the optional call keeps every other browser quiet
+           instead of throwing. */
+        if (e.pointerType === "touch") navigator.vibrate?.(12);
+
+        wake();
+      });
+
+      /* ---- the world changing under it ----------------------------------- */
+
+      let resizeFrame = null;
+      window.addEventListener("resize", () => {
+        /* one relayout per frame, not one per resize event */
+        if (resizeFrame !== null) return;
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = null;
+          layout();
+          calm.matches ? settle() : wake();
+        });
+      });
+
+      /* A parked loop restarts from a stale timestamp, which would hand the
+         first frame back a huge dt. Drop the clock on the way out instead —
+         and pick the motion back up on the way in, because a field parked
+         mid-swing would otherwise stay frozen half-turned until something
+         else happened to wake it. wake() reseeds the clock, so the restart
+         costs nothing. */
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+          return;
+        }
+
+        calm.matches ? settle() : wake();
+      });
+
+      /* wake() guards the way in; this guards the way out. Turning the
+         preference on mid-visit should stop what is already moving, not
+         wait for the springs to park on their own. */
+      calm.addEventListener("change", () => {
+        calm.matches ? settle() : wake();
+      });
+
+      /* ---- opening ------------------------------------------------------- */
+
+      readInk();
+      layout();
+
+      if (matchMedia("(pointer: coarse)").matches && hint) {
+        hint.textContent = "drag to comb the field · tap to send a pulse";
+      }
+
+      if (calm.matches) {
+        settle();
+      } else {
+        /* The field arrives flat, then one pulse crosses it from the middle.
+           A visitor who never moves the pointer still gets told, in the
+           exhibit's own language, what the exhibit does. */
+        pulseAt(w / 2, h / 2);
+        wake();
+      }
+    }
+  </script>
+
+</body>
+</html>
