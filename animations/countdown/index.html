@@ -159,58 +159,42 @@
          once the message is up. script.js owns the wording. -->
     <button class="cd-replay" type="button"></button>
 
-    <!-- The exhibit's two facts, handed to the visitor. This page used to
-         hard-code a date and a sentence; now it counts to whatever you
-         put here and says whatever you tell it to, remembered in
-         localStorage between visits.
+    <!-- Which occasion the arrival is for: it decides the celebration
+         thrown and the sentence landed on, and nothing else. Three words,
+         and they are the only control on this page besides the button
+         above them.
 
-         A <div>, not a <form>: there is nothing to submit and no server
-         to submit it to. Each field applies itself as you change it, so a
-         form would only add an Enter key that reloads the page.
+         This block briefly carried a date field and a message field too,
+         so a visitor could point the countdown at their own day and write
+         their own line. Both are gone, and the reason is worth stating so
+         nobody adds them back by reflex: they were CONFIGURATION on a
+         page whose subject is an ANIMATION. Anyone who wants their own
+         date and their own sentence copies the code, where they are the
+         first two things in the file (MONTH, DAY and MESSAGE at the top
+         of code.html). What stays here is the part you cannot get by
+         reading the source: seeing the three endings play.
 
-         The labels are real labels, hidden visually — the fields' own
-         placeholders read as labels to someone looking at the page, but a
-         placeholder is not an accessible name, and it disappears the
-         moment there is a value. Same .visually-hidden the <h1> uses. -->
-    <div class="cd-setup">
-      <!-- Which celebration the arrival throws, and the sentence it lands
-           on. Real radios rather than buttons with aria: a radiogroup is
-           exactly what this is, and using the real thing buys arrow-key
-           navigation, the roving tabstop, and the right announcement
-           without a line of script.
+         Real radios rather than buttons with aria: a radiogroup is
+         exactly what this is, and using the real thing buys arrow-key
+         navigation, the roving tabstop, and the right announcement
+         without a line of script.
 
-           The inputs are hidden the same way the page's <h1> is — off
-           screen but still focusable and still in the accessibility tree
-           — and the labels are what you actually see. A label is already
-           a click target for its input, so no handler is needed to make
-           the words work. -->
-      <p class="cd-themes" role="radiogroup" aria-label="Celebration">
-        <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
-               id="cd-theme-birthday" value="birthday">
-        <label class="cd-theme-label" for="cd-theme-birthday">birthday</label>
-        <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
-               id="cd-theme-newyear" value="newyear">
-        <label class="cd-theme-label" for="cd-theme-newyear">new year</label>
-        <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
-               id="cd-theme-launch" value="launch">
-        <label class="cd-theme-label" for="cd-theme-launch">launch</label>
-      </p>
-      <p class="cd-setup-field">
-        <label class="visually-hidden" for="cd-date">Count down to</label>
-        <!-- min is set by script.js, from today at page load: "today" is
-             not a constant, so baking it into the markup would leave a
-             tab open overnight enforcing yesterday's floor. -->
-        <input class="cd-set-date" id="cd-date" type="date">
-      </p>
-      <p class="cd-setup-field">
-        <label class="visually-hidden" for="cd-message">Say on arrival</label>
-        <!-- Capped where .cd-message's 20ch measure stops holding: past
-             about this length the arrival sentence stops being a sentence
-             and becomes a paragraph on an empty stage. -->
-        <input class="cd-set-message" id="cd-message" type="text" maxlength="40"
-               autocomplete="off" spellcheck="false">
-      </p>
-    </div>
+         The inputs are hidden the same way the page's <h1> is — off
+         screen but still focusable and still in the accessibility tree —
+         and the labels are what you actually see. A label is already a
+         click target for its input, so no handler is needed to make the
+         words work. -->
+    <p class="cd-themes" role="radiogroup" aria-label="Celebration">
+      <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
+             id="cd-theme-birthday" value="birthday">
+      <label class="cd-theme-label" for="cd-theme-birthday">birthday</label>
+      <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
+             id="cd-theme-newyear" value="newyear">
+      <label class="cd-theme-label" for="cd-theme-newyear">new year</label>
+      <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
+             id="cd-theme-launch" value="launch">
+      <label class="cd-theme-label" for="cd-theme-launch">launch</label>
+    </p>
   </main>
 
   <script src="script.js"></script>

@@ -285,12 +285,12 @@ body.is-done .cd-message {
    keyboard can still tab to is a trap, and opacity alone leaves exactly
    that. The delay holds it on screen for the full fade, then takes it
    out of the tab order. */
-/* The setup fields go with it, and for the same reasons: they have
+/* The row of words goes with it, and for the same reasons: it has
    nothing to offer while the handoff is playing, and a keyboard must not
    be able to tab into something the eye can't see. Listed together so the
    two can never drift into leaving on different clocks. */
 body.is-replaying .cd-replay,
-body.is-replaying .cd-setup {
+body.is-replaying .cd-themes {
   opacity: 0;
   visibility: hidden;
   transition: opacity 260ms ease, visibility 0s linear 260ms;
@@ -309,51 +309,33 @@ body.is-replaying .cd-setup {
   border-radius: 2px;
 }
 
-/* --- The setup fields ---------------------------------------------------
+/* --- The occasion picker ------------------------------------------------
 
-   The exhibit's two facts, as controls. They sit a step quieter than the
-   replay button — that button is the one thing telling a visitor the
-   payoff can be seen on demand, and it should still be the first thing
-   found down here. These wait to be looked for.
+   Which celebration the arrival throws, and the only control on this page
+   besides the button above it. It sits a step quieter than that button —
+   the button is the one thing telling a visitor the payoff can be seen on
+   demand, and it should still be the first thing found down here. These
+   three wait to be looked for.
 
-   Laid out as a row that wraps: side by side where there's room, stacked
-   on a phone, without a media query deciding where that happens. */
-.cd-setup {
+   A date field and a message field used to sit under this row, so the
+   countdown could be pointed at the visitor's own day. Both are gone:
+   they were configuration on a page whose subject is an animation, and
+   the copied code carries them as its first two constants. The note in
+   index.html has the longer version. */
+.cd-themes {
+  position: relative; /* anchors the travelling rule, .cd-themes::after */
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-3) var(--space-5);
+  gap: var(--space-5);
   /* Pulled up against the replay button, because the stage's own gap is
      sized to separate the readout from its controls as a group — left at
-     that width these would read as a third, unrelated thing rather than
-     as the button's neighbours. */
-  margin-top: calc(var(--space-6) - var(--space-7));
+     that width this row would read as a third, unrelated thing rather
+     than as the button's neighbour. */
+  margin: calc(var(--space-6) - var(--space-7)) 0 0;
   /* The ARRIVAL half of the pairing, flipped at 0s so the fade has
      something visible to fade; the departure, with the delay, is on the
      .is-replaying rule above. Same arrangement as .cd-replay. */
   transition: opacity 260ms ease, visibility 0s;
-}
-
-.cd-setup-field {
-  margin: 0;
-}
-
-/* --- The theme picker ---------------------------------------------------
-
-   Which celebration the arrival throws. It governs the two fields below
-   it, so it sits above them — and takes the full row so they wrap
-   underneath, rather than sitting alongside as a third equal control.
-
-   The words stand the same distance apart as the two fields below them,
-   so the whole strip keeps one rhythm instead of reading as two rows
-   that happened to land near each other. */
-.cd-themes {
-  position: relative; /* anchors the travelling rule, .cd-themes::after */
-  flex-basis: 100%;
-  display: flex;
-  justify-content: center;
-  gap: var(--space-5);
-  margin: 0;
 
   /* How far under the words their rule sits. Clear of the descenders in
      "birthday" and "new year", close enough to belong to the word rather
@@ -489,114 +471,6 @@ body.is-replaying .cd-setup {
   inset: var(--space-2) 0 var(--space-1);
   outline: 2px solid var(--accent);
   border-radius: 2px;
-}
-
-/* Both fields, styled as one. Underlined rather than boxed: a box here
-   would be the heaviest object on a page whose whole composition is
-   type on empty paper, and the line is enough to say "you can type in
-   this" once the caret is in it. */
-.cd-set-date,
-.cd-set-message {
-  /* The lab's mono, said explicitly: form controls do NOT inherit the
-     page's font — the UA sheet gives them a system default, so leaving
-     this out is what makes a date field look like it came from a
-     different website. */
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  /* Said explicitly too, and for the same kind of reason: at the UA's
-     `normal` these two disagree about their own height by 2px, because a
-     date field is built from internal fields with metrics of their own.
-     Two underlines a pixel apart is exactly the sort of thing that reads
-     as sloppy without anyone being able to say why. One value, one line. */
-  line-height: 1.6;
-  color: var(--ink-muted);
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0; /* iOS rounds inputs by default */
-  /* Even padding rather than a squat 4px: these two are the only things
-     on the page a thumb has to aim at, and it grows them from ~29px to a
-     ~38px target without the underline drifting far from the text. */
-  padding: var(--space-2);
-  transition: color var(--speed-color) ease,
-              border-color var(--speed-color) ease;
-}
-
-/* Chromium sizes a date input to a fixed intrinsic width that no content
-   keyword can talk down — min-content, fit-content and auto all report
-   the same 133px, which is room for a longer date than any locale writes.
-   The spare space collects at the right, between the date and the
-   browser's calendar button, and reads as a field that failed to fill
-   rather than one waiting to be filled.
-
-   So the width is stated: ten characters for the date itself, which in a
-   monospaced face is exactly what "mm/dd/yyyy" measures, plus a space
-   unit for the button the browser draws after it. */
-.cd-set-date {
-  width: calc(10ch + var(--space-5) + 2 * var(--space-2));
-}
-
-/* And the 2px the line-height note above is about: Chromium gives the
-   wrapper around the internal day/month/year fields a 1px band top and
-   bottom, which is what makes a date field two pixels taller than a text
-   field set at the same size. Zeroed here so the two underlines land on
-   one line. Every other engine ignores the selector, and has nothing to
-   fix. */
-.cd-set-date::-webkit-datetime-edit-fields-wrapper {
-  padding: 0;
-}
-
-.cd-set-message {
-  width: 22ch; /* a shade over .cd-message's 20ch measure, so what fits
-                  here is what will fit up there */
-  max-width: 100%;
-}
-
-.cd-set-date:hover,
-.cd-set-message:hover,
-.cd-set-date:focus,
-.cd-set-message:focus {
-  color: var(--ink);
-  border-bottom-color: var(--line-strong);
-}
-
-/* The ring goes on the border rather than around the box: an outline on
-   a field this wide draws a rectangle in a composition that has no other
-   rectangles left by this point in the page. */
-.cd-set-date:focus-visible,
-.cd-set-message:focus-visible {
-  outline: none;
-  border-bottom-color: var(--accent);
-  box-shadow: 0 1px 0 0 var(--accent); /* doubles the line's weight
-                                          without moving anything */
-}
-
-/* The placeholder is a hint, not content, and must not be mistaken for a
-   typed value — but it still has to be readable, so it stops well short
-   of the faint end. */
-.cd-set-message::placeholder {
-  color: color-mix(in srgb, var(--ink-muted) 70%, var(--paper));
-  opacity: 1; /* Firefox dims placeholders again on top of the color */
-}
-
-/* The calendar button the browser draws inside the field. Left as the
-   platform's own control — it opens the platform's own picker, and a
-   visitor knows their picker better than anything this page could draw —
-   but recolored to the theme's ink, since the default is a fixed dark
-   glyph that disappears against the dark paper. */
-.cd-set-date::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.55;
-  transition: opacity var(--speed-color) ease;
-}
-
-.cd-set-date:hover::-webkit-calendar-picker-indicator,
-.cd-set-date:focus::-webkit-calendar-picker-indicator {
-  opacity: 1;
-}
-
-[data-theme="dark"] .cd-set-date::-webkit-calendar-picker-indicator {
-  filter: invert(1);
 }
 
 /* --- Small screens ------------------------------------------------------ */

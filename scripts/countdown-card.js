@@ -11,33 +11,28 @@
    message rising behind them — is CSS, in index.html's own style block.
    This file has no opinion about any of it.
 
-   What it counts to is the visitor's own target, the one the exhibit
-   saves under this key. The exhibit owns the setting; this only reads it,
-   so there is no second copy of a date to keep in step — which the old
-   version of this file had, as a duplicated month and day.
-
-   With nothing set — a first visit, or a cleared field — there is no
-   target to read, and the card still has to be a live miniature rather
-   than four frozen dashes sitting next to two siblings that move. So it
-   counts to the next midnight: always real, always ticking, and honest in
-   a way an invented date wouldn't be. The exhibit itself answers the same
-   empty state by playing the handoff, which is what the card's hover
-   already shows. */
+   What it counts to is what the exhibit counts to: the next 1st of
+   January, at local midnight. The rule is duplicated here rather than
+   read out of storage, because there is nothing in storage to read — the
+   exhibit counts to one fixed date now, not to a target the visitor sets.
+   With no build step there is nowhere shared to put the rule, and a card
+   quietly disagreeing with the page it links to is the mismatch a visitor
+   would actually notice. Keep the two in step by hand; nextNewYear() in
+   animations/countdown/script.js is the original. */
 (() => {
   const clock = document.querySelector(".cd-mini-clock");
   if (!clock) return; /* every page but the homepage */
 
-  /* The exhibit's storage key. Reads are wrapped because storage access
-     can throw outright in a locked-down profile, not merely come back
-     empty — and a card is nobody's reason to take the homepage down. */
-  const KEY_TARGET = "countdown:target";
+  /* The exhibit's one stored setting. The read is wrapped because storage
+     access can throw outright in a locked-down profile, not merely come
+     back empty — and a card is nobody's reason to take the homepage
+     down. */
   const KEY_THEME = "countdown:theme";
 
-  /* The exhibit's two arrival sentences, by theme. Duplicated from its
-     THEMES table on purpose: with no build step there is nowhere shared
-     to put two strings, and the alternative — leaving the card asserting
-     one sentence while the exhibit uses the other — is the mismatch a
-     visitor would actually notice, since the card's hover plays the very
+  /* The exhibit's three arrival sentences, by occasion. Duplicated from
+     its THEMES table for the same reason the date is, and with the same
+     obligation: leaving the card asserting one sentence while the exhibit
+     uses another would show, since the card's hover plays the very
      handoff the exhibit lands with. */
   const MESSAGES = {
     birthday: "Happy birthday!",
@@ -55,29 +50,16 @@
     return MESSAGES[raw] ? raw : "newyear";
   }
 
-  function storedTarget() {
-    let raw = null;
-    try {
-      raw = localStorage.getItem(KEY_TARGET);
-    } catch {
-      return null;
-    }
-
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw || "");
-    if (!m) return null;
-    const [, y, mo, d] = m.map(Number);
-    /* Local midnight, built from parts. `new Date("2027-01-01")` parses
-       as UTC and would put the card an hour or two out of step with the
-       exhibit it links to, for anyone not on Greenwich. */
-    const t = new Date(y, mo - 1, d, 0, 0, 0, 0);
-    return t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d
-      ? t
-      : null;
-  }
-
-  function nextMidnight() {
-    const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0);
+  /* Local midnight on the next 1st of January — which on January 1st is
+     today, not a year away. Built from parts rather than parsed from a
+     string: `new Date("2027-01-01")` parses as UTC and would put the card
+     an hour or two out of step with the exhibit it links to, for anyone
+     not on Greenwich. */
+  function nextNewYear() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const jan1 = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    return jan1 >= today ? jan1 : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
   }
 
   const nums = {};
@@ -94,21 +76,13 @@
     nums.s.textContent = pad(s);
   }
 
+  /* Read once, like the exhibit's, so a tab left open across the turn of
+     the year runs the card down to zero rather than rolling it on to the
+     January after. */
+  const target = nextNewYear();
+
   function tick() {
-    const now = new Date();
-    const saved = storedTarget();
-
-    /* A target that has arrived sits at zero rather than rolling on to
-       something else, exactly as the exhibit has it — so the card and the
-       page it links to never quietly disagree about whether the moment
-       has come. */
-    if (saved !== null && saved <= now) {
-      write(0, 0, 0, 0);
-      return;
-    }
-
-    const target = saved !== null ? saved : nextMidnight();
-    const total = Math.max(0, Math.floor((target - now) / 1000));
+    const total = Math.max(0, Math.floor((target - Date.now()) / 1000));
     write(
       Math.floor(total / 86400),
       Math.floor(total / 3600) % 24,

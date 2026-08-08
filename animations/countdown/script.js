@@ -18,19 +18,9 @@
 (() => {
   "use strict";
 
-  /* --- The two facts ---------------------------------------------------
+  /* --- What this counts to, and what happens when it gets there ---------
 
-     This exhibit used to hard-code them: a month, a day, and a sentence,
-     all three somebody else's. That made the payoff fire once a year on a
-     date no visitor had any reason to care about, and put a real person's
-     birthday on a public page.
-
-     Now the visitor owns both. They live in localStorage, they are set
-     from the two fields under the stage, and either can be absent — a
-     page with nothing set has nothing to count to, which is a state this
-     file has to handle rather than paper over.
-
-     What's left here is two tables.
+     Two tables and a date.
 
      CELEBRATIONS is what an arrival can LOOK like. Each one is the same
      two things — the show it throws on landing, and what a click on the
@@ -41,15 +31,19 @@
      the same idea, and more than one occasion can reasonably want paper
      thrown in the air.
 
-     THEMES is what an arrival MEANS: the sentence it lands on, which
-     celebration it points at, and — where the occasion has one — the
-     date it naturally falls on.
+     THEMES is what an arrival MEANS: the sentence it lands on and which
+     celebration it points at. Which one is armed is the visitor's single
+     choice on this page, and it is remembered between visits.
 
-     That last field is why this is a table rather than a switch. New
-     Year has a date by definition; a birthday and a launch are whenever
-     yours is, so their naturalDate is null and the field is left to the
-     visitor. Anything with a naturalDate prefills the date when it's
-     PICKED — never on load, for a reason spelled out at applyTheme(). */
+     For a while both a date field and a message field lived under the
+     stage, so the countdown could be pointed at the visitor's own day.
+     They are gone. This is an animation exhibit, and a date picker is
+     configuration — the same two facts are the first lines of code.html,
+     where anyone who wants their own countdown is already going. What
+     cannot be got from reading the source is watching the three endings
+     play, so that is what the page keeps.
+
+     Which leaves one date for all three, below. */
   const CELEBRATIONS = {
     /* Paper thrown in a room: two cannons from the edges, then a long
        thin fall. */
@@ -88,34 +82,39 @@
 
   const THEMES = {
     birthday: {
-      label: "birthday",
       message: "Happy birthday!",
       celebration: "balloons",
-      naturalDate: null,
     },
     newyear: {
-      label: "new year",
       message: "Happy new year!",
       celebration: "fireworks",
-      /* The next January 1st — which on January 1st is TODAY, not a year
-         away. Blindly adding a year would be the one day of the year this
-         theme refuses to celebrate. */
-      naturalDate: () => {
-        const n = new Date();
-        const today = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 0, 0, 0, 0);
-        const jan1 = new Date(n.getFullYear(), 0, 1, 0, 0, 0, 0);
-        return jan1 >= today ? jan1 : new Date(n.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
-      },
     },
     launch: {
-      label: "launch",
       message: "It's live!",
       celebration: "confetti",
-      naturalDate: null,
     },
   };
 
   const DEFAULT_THEME = "newyear";
+
+  /* The next January 1st, at local midnight.
+
+     One date, shared by all three occasions. A birthday and a launch are
+     whenever yours is, so neither has a date anyone else could name —
+     and New Year's is the one occasion that does, always real, always
+     ahead, and needing nothing from the visitor. The page counts to it
+     and says so under the clock; the words below choose what happens
+     when it lands.
+
+     On January 1st it is TODAY, not a year away. Blindly adding a year
+     would make this the one day of the year the exhibit refuses to
+     celebrate. */
+  function nextNewYear() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const jan1 = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    return jan1 >= today ? jan1 : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+  }
 
   /* The celebration the armed theme points at. One lookup, in one place,
      so nothing downstream has to know that a theme names its animation
@@ -131,8 +130,6 @@
      party context refuses outright. The theme bootstrap in this page's
      <head> guards the same way and for the same reason. An uncaught throw
      here would take the whole exhibit down over a preference. */
-  const KEY_TARGET = "countdown:target";
-  const KEY_MESSAGE = "countdown:message";
   const KEY_THEME = "countdown:theme";
 
   function readStored(key) {
@@ -173,55 +170,25 @@
   const messageEl = document.querySelector(".cd-message");
   const readingEl = document.querySelector(".cd-reading");
   const replayEl = document.querySelector(".cd-replay");
-  const dateInput = document.querySelector(".cd-set-date");
-  const messageInput = document.querySelector(".cd-set-message");
   const nums = {};
   document.querySelectorAll(".cd-num").forEach((el) => {
     nums[el.dataset.unit] = el;
   });
 
-  /* --- What the visitor has chosen -------------------------------------
+  /* What the page is counting to. Read once, at load: a tab left open
+     across the turn of the year counts down to zero and celebrates,
+     which is the right answer and the one the exhibit exists for. */
+  const target = nextNewYear();
 
-     customTarget is a Date at local midnight, or null when nothing is
-     set. Null is a real state with its own behaviour, not a stand-in for
-     a default: it is what makes the page open into the handoff. */
-  let customTarget = null;
-  let customMessage = "";
-  /* Which of the two celebrations is armed. Always a valid key: a
+  /* Which of the three occasions is armed. Always a valid key: a
      hand-edited or unrecognised stored value falls back rather than
      leaving THEMES[theme] undefined and taking the arrival down. */
   let theme = DEFAULT_THEME;
 
-  /* Parses the yyyy-mm-dd an <input type="date"> yields, in LOCAL time.
-     `new Date("2027-01-01")` would not do: a bare date string is parsed
-     as UTC, which lands the target an hour or two off local midnight and
-     puts the whole count out by that much for anyone east or west of
-     Greenwich. Splitting the parts and handing them to the constructor
-     asks for local midnight explicitly.
-
-     Returns null for anything that isn't a real date, so a hand-edited
-     storage value or a browser that hands back something unexpected
-     falls back to "nothing set" rather than an Invalid Date that would
-     make every reading downstream NaN. */
-  function parseDate(value) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
-    if (!m) return null;
-    const [, y, mo, d] = m.map(Number);
-    const t = new Date(y, mo - 1, d, 0, 0, 0, 0);
-    /* Rejects the overflow Date performs silently: month 13 or day 32
-       would otherwise roll into the next month and quietly count to a
-       day nobody asked for. */
-    return t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d
-      ? t
-      : null;
-  }
-
-  /* What the arrival says: whatever the visitor typed, or failing that
-     the sentence belonging to the theme they picked. So clearing the
-     field doesn't leave the page silent — it hands the line back to the
-     theme, which is also what the field's placeholder promises. */
+  /* What the arrival says. One line per occasion, so picking a word up
+     changes both the animation and the sentence it lands on. */
   function messageText() {
-    return customMessage || THEMES[theme].message;
+    return THEMES[theme].message;
   }
 
   /* Checked live at the moment of use rather than latched at load, so
@@ -258,24 +225,20 @@
   let demoTarget = null;
 
   /* Is there a live countdown to be at, or to go back to? Asked of the
-     visitor's own target only, never of the demo — the replay button
-     needs to know whether returning is a thing it can honestly offer. */
+     real target only, never of the demo — the replay button needs to
+     know whether returning is a thing it can honestly offer, and on the
+     day itself it isn't. */
   function realIsLive() {
-    return customTarget !== null && Date.now() < +customTarget;
+    return Date.now() < +target;
   }
 
-  /* Three states, in priority order.
+  /* Two states, in priority order.
 
      A rehearsal outranks everything: it is the visitor asking to see the
      handoff now, over whatever the page was otherwise doing.
 
-     Then the visitor's own target, if they have set one.
-
-     Then IDLE — nothing set, nothing to count to. The old version had no
-     equivalent, because a hard-coded anniversary is never absent. It
-     matters because it is the state a first visit is in, and the one the
-     page answers by playing the handoff instead of showing a clock
-     counting to nothing. */
+     Then the real countdown, live until the year turns and finished
+     after. */
   function state() {
     if (demoTarget !== null) {
       return Date.now() >= demoTarget
@@ -283,10 +246,8 @@
         : { done: false, target: new Date(demoTarget), demo: true };
     }
 
-    if (customTarget === null) return { idle: true };
-
     return realIsLive()
-      ? { done: false, target: customTarget, demo: false }
+      ? { done: false, target, demo: false }
       : { done: true };
   }
 
@@ -962,8 +923,8 @@
     if (e.button !== 0) return;
     /* The controls are controls, not celebration — a burst thrown from
        the cursor as the page resets reads as debris from the thing that
-       just left, and a click meant for a field should reach the field. */
-    if (e.target.closest(".cd-replay, .cd-setup")) return;
+       just left, and a click meant for a word should reach the word. */
+    if (e.target.closest(".cd-replay, .cd-themes")) return;
     celebration().at(e.clientX, e.clientY);
   });
 
@@ -1114,22 +1075,6 @@
   function tick() {
     const st = state();
 
-    /* Nothing set, so there is no count to render and no arrival to play.
-       The page answers this by rehearsing — which is what makes a first
-       visit open into the handoff rather than a clock pointed at nothing.
-
-       Self-healing rather than left to the callers: this is also the
-       state a visitor lands in by CLEARING their date, and having the one
-       place that renders the count decide what an empty count means beats
-       remembering to start a rehearsal at every site that can empty it.
-       No recursion — startRehearsal() sets demoTarget, so the tick it
-       makes reads as a demo, never as idle. */
-    if (st.idle) {
-      firstPass = false;
-      if (!done) startRehearsal();
-      return;
-    }
-
     if (st.done) {
       celebrate(firstPass);
       firstPass = false;
@@ -1217,11 +1162,10 @@
   /* --- The replay control ----------------------------------------------- */
 
   /* The button offers whichever of its two jobs makes sense from here.
-     "Back to the countdown" is only honest when there IS one to go back
-     to. Two ways there isn't: the visitor's date has arrived, so the
-     celebration IS the real state; or they never set one, so the page has
-     only ever had the rehearsal. Both keep the button offering the
-     replay rather than promising a countdown that doesn't exist. */
+     "Back to the countdown" is only honest while there IS one to go back
+     to — on the day itself the count has run out, the celebration is the
+     real state, and the button goes back to offering the replay rather
+     than promising a countdown that no longer exists. */
   function canReturn() {
     return done && realIsLive();
   }
@@ -1235,10 +1179,9 @@
      stages a rehearsal a few seconds out; false hands the page back to
      whatever state() says the real situation is.
 
-     Shared by the replay button, the two setup fields, and the page's own
-     opening move. Auto-play on load is this function, not a second
-     implementation of it — the one thing that must not drift is what a
-     handoff looks like. */
+     Both of the replay button's two jobs are this one function, so the
+     rehearsal and the return can never drift apart in what they do to the
+     page. */
   function restart(demo) {
     demoTarget = demo ? Date.now() + DEMO_SECONDS * 1000 : null;
 
@@ -1262,74 +1205,11 @@
     scheduleTick();
   }
 
-  function startRehearsal() {
-    restart(true);
-  }
-
   replayEl.addEventListener("click", () => {
     restart(!canReturn());
   });
 
-  /* --- The two setup fields ---------------------------------------------
-
-     A date and a sentence, both optional, both remembered. They sit under
-     the replay button and step aside with it while a rehearsal plays. */
-
-  /* Today in the yyyy-mm-dd the date input speaks, built from local parts
-     rather than toISOString() — that converts to UTC first, so anyone far
-     enough east or west gets yesterday or tomorrow as their floor. */
-  function todayValue() {
-    const n = new Date();
-    return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`;
-  }
-
-  /* A past date can only ever show the arrival, which the replay button
-     already offers on demand — so the floor is today, enforced by the
-     input where the browser can say so in its own words, and re-checked
-     on read because `min` is a validation hint, not a guarantee. */
-  function applyDateInput() {
-    const picked = parseDate(dateInput.value);
-    const floor = parseDate(todayValue());
-
-    if (picked !== null && floor !== null && picked < floor) {
-      /* Say why, in the browser's own voice and language, rather than
-         silently discarding it. */
-      dateInput.setCustomValidity("Pick a date that hasn't happened yet.");
-      dateInput.reportValidity();
-      return;
-    }
-    dateInput.setCustomValidity("");
-
-    customTarget = picked;
-    writeStored(KEY_TARGET, picked ? dateInput.value : null);
-
-    /* Setting a date hands the page to that countdown; clearing it leaves
-       nothing to count, which tick() answers by rehearsing. Either way
-       the page re-decides from state() rather than being told. */
-    restart(false);
-  }
-
-  function applyMessageInput() {
-    customMessage = messageInput.value.trim();
-    writeStored(KEY_MESSAGE, customMessage);
-
-    /* If the message is already on screen, change it under the visitor's
-       cursor — retyping it and watching nothing happen until the next
-       handoff would read as the field being broken. */
-    if (done) {
-      messageEl.textContent = messageText();
-      announce(messageText());
-    }
-  }
-
-  /* `change` rather than `input` for the date: `input` fires on every
-     keystroke inside the field, so typing a year turns 0002, 0020, 0202
-     into three restarts before 2027 lands. The message takes `input`,
-     because there is no half-typed sentence that costs anything. */
-  dateInput.addEventListener("change", applyDateInput);
-  messageInput.addEventListener("input", applyMessageInput);
-
-  /* --- The theme -------------------------------------------------------- */
+  /* --- The occasion ------------------------------------------------------ */
 
   const themesRow = document.querySelector(".cd-themes");
   const themeInputs = Array.from(document.querySelectorAll(".cd-theme-input"));
@@ -1390,22 +1270,9 @@
      events could matter. */
   new ResizeObserver(markTheme).observe(themesRow);
 
-  /* Writes the date field from a value, or empties it. Kept in one place
-     because two callers have to agree on the format exactly, and getting
-     it wrong shows up as a silently blank field. */
-  function writeDateField(date) {
-    dateInput.value = date
-      ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-      : "";
-  }
-
-  function applyTheme(next, { prefill }) {
+  function applyTheme(next) {
     theme = THEMES[next] ? next : DEFAULT_THEME;
     writeStored(KEY_THEME, theme);
-
-    /* The placeholder always shows the sentence the theme would use, so
-       an empty field is a promise rather than a blank. */
-    messageInput.placeholder = THEMES[theme].message;
 
     /* Set with the theme rather than at show time, so the canvas is
        already on the right side of the text before a single piece is
@@ -1419,47 +1286,17 @@
        checked, so it moves when that does and at no other time. */
     markTheme();
 
-    /* THE PREFILL, and the one rule that matters about it: it happens
-       when a theme is PICKED, never when one is restored at load.
+    /* The occasion is a costume, not a cue: picking one re-dresses the
+       page, it does not restage it. Nothing here touches the countdown,
+       which goes on counting to the same day whichever word is chosen —
+       so browsing all three costs no rewind, and a visitor who picks
+       during the last ten seconds does not lose them.
 
-       state() only returns idle while customTarget is null, and idle is
-       what makes a first visit open into the handoff. Prefilling at load
-       would give every fresh visitor a target, so the page would open
-       counting to next January instead of playing the thing it exists to
-       show — and the bug would look like the auto-play "just not working"
-       rather than like a date being set behind it.
-
-       Only fills an EMPTY field: silently overwriting a date the visitor
-       chose, because they wanted the other animation, would be the field
-       throwing their answer away. */
-    const filled =
-      prefill && THEMES[theme].naturalDate !== null && customTarget === null;
-
-    if (filled) {
-      const natural = THEMES[theme].naturalDate();
-      customTarget = natural;
-      writeDateField(natural);
-      writeStored(KEY_TARGET, dateInput.value);
-    }
-
-    /* Re-decide from state() only when the pick actually moved what the
-       page is counting to — which is exactly when the prefill wrote a
-       date, and at no other time.
-
-       Restarting on EVERY pick is what this used to do, and while idle
-       that meant a full rewind per click: restart(false) leaves no
-       target, tick() reads idle, and idle rehearses. So browsing the
-       three words replayed the whole four-second count and the handoff
-       each time, over a handoff you were probably still watching. The
-       theme is a costume, not a cue — picking one should re-dress the
-       page, not restage it. */
-    if (filled) restart(false);
-    else if (done) {
-      /* Already arrived, so there is nothing to count and nothing to
-         rewind: swap the sentence for the new theme's, then re-throw the
-         celebration where it stands. That keeps the reason the old code
-         restarted — you get to SEE what you picked — without sending the
-         digits back to rehearse for it. */
+       What it CAN do is change an arrival that is already on screen. */
+    if (done) {
+      /* Already arrived: swap the sentence for the new occasion's, then
+         re-throw the celebration where it stands, so you get to SEE what
+         you picked without sending the digits back to rehearse for it. */
       messageEl.textContent = messageText();
 
       /* Only a celebration that has LANDED gets re-thrown. Mid-handoff,
@@ -1469,9 +1306,9 @@
          sentence, no controls handed back. .is-replaying rules out the
          same window from the other end, the beat after finish() runs but
          before it gives the controls back. (The visitor can't reach the
-         radios then either, since the setup block steps aside with the
-         button — this is belt and braces around a timer, not a race a
-         click can win.) */
+         words then either, since the row steps aside with the button —
+         this is belt and braces around a timer, not a race a click can
+         win.) */
       const landed =
         body.classList.contains("is-done") &&
         !body.classList.contains("is-replaying");
@@ -1496,9 +1333,12 @@
     }
   }
 
+  /* `change` covers both ways in: a click on a word, and the arrow keys
+     walking the group, which move the selection without ever producing a
+     click. */
   for (const el of themeInputs) {
     el.addEventListener("change", () => {
-      if (el.checked) applyTheme(el.value, { prefill: true });
+      if (el.checked) applyTheme(el.value);
     });
   }
 
@@ -1539,42 +1379,15 @@
 
   /* --- Opening move -----------------------------------------------------
 
-     Restore what the visitor chose last time, dress the two fields in it,
-     and then let the page decide what it is.
-
-     A saved target that has since gone past is dropped rather than kept:
-     it would open the page on a celebration for something that finished
-     weeks ago, with a date line naming a day in the past. Clearing it
-     puts the page back where a first visit starts.
-
-     The date's floor is set here rather than in the markup because
-     "today" is not a constant — a tab left open overnight would otherwise
-     keep yesterday's floor. */
-  function restore() {
-    const saved = parseDate(readStored(KEY_TARGET));
-    const floor = parseDate(todayValue());
-
-    customTarget = saved !== null && floor !== null && saved >= floor ? saved : null;
-    if (saved !== null && customTarget === null) writeStored(KEY_TARGET, null);
-
-    customMessage = (readStored(KEY_MESSAGE) || "").trim();
-
-    dateInput.min = todayValue();
-    writeDateField(customTarget);
-    messageInput.value = customMessage;
-
-    /* prefill: false is the whole point — see the note in applyTheme.
-       Restoring a theme must not put a date behind a first visit's back
-       and rob it of the opening handoff. */
-    applyTheme(readStored(KEY_THEME), { prefill: false });
-  }
-
+     The visitor's one choice, restored: which occasion the arrival is
+     for. An unrecognised or missing value falls back inside applyTheme,
+     so a hand-edited storage entry cannot take the page down. */
   readPalette();
   layout();
-  restore();
+  applyTheme(readStored(KEY_THEME));
   updateReplay();
 
-  /* restore() has already put the rule under the chosen word. This is
+  /* applyTheme has already put the rule under the chosen word. This is
      what lets it MOVE from there — held back until two things are true,
      because a rule that animates before either one is a rule the visitor
      watches settling into place on load rather than one that was simply
@@ -1592,12 +1405,12 @@
     requestAnimationFrame(() => themesRow.classList.add("mark-moves"));
   });
 
-  /* With nothing set the first tick reads idle and rehearses on its own,
-     which IS the opening handoff — so there is no separate auto-play
-     branch here to keep in step with the button. With a date set, the
-     same call simply starts counting to it: the visitor's own countdown
-     is what they came back for, and replaying the demo over it on every
-     load would be noise. */
+  /* And the page opens on the countdown itself, not on its ending. The
+     handoff is what the replay button is FOR, and a visitor who arrives
+     to a celebration already in progress has been shown the punchline
+     before the setup — the dimmed units and the pulsing seconds of the
+     last minute are part of the exhibit too, and the button plays the
+     whole arc on demand. */
   tick();
   scheduleTick();
 })();
