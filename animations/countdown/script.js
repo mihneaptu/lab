@@ -1,18 +1,21 @@
 /* ==========================================================================
    Countdown — the engine
 
-   Four numbers ticking down, and what happens when they run out: the
-   digits lift away in sequence, the frame they sat in fades behind them,
-   and the message they were counting to rises into the space. Then the
-   confetti.
+   Four numbers running out, and what happens when they do: the digits
+   lift away in sequence, the frame they sat in fades behind them, and
+   the message they were counting to rises into the space. Then the
+   celebration, in whichever of three currencies the chosen occasion
+   deals in.
 
-   The whole exhibit is built around one awkward fact: its payoff fires
-   once a year. So every step of the handoff has to be replayable on
-   demand, which means every step has to be CANCELLABLE — a visitor who
-   presses replay twice in a second must not get two overlapping
-   handoffs, and one who presses it mid-flight must land somewhere clean
-   rather than in whatever half-state the first run had reached. The run
-   token below is how that is arranged.
+   This exhibit used to be built around an awkward fact: it counted to a
+   real date, so its payoff fired once a year. That is gone — the count
+   is a few seconds long and the handoff is the whole of the page. What
+   the old arrangement left behind is worth keeping anyway: every step is
+   CANCELLABLE, because the handoff is now replayed constantly rather
+   than annually, and a visitor who presses replay twice in a second must
+   not get two overlapping handoffs, nor be left in whatever half-state
+   the first run had reached. The run token below is how that is
+   arranged.
    ========================================================================== */
 
 (() => {

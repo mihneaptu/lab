@@ -86,11 +86,13 @@
     </svg>
   </button>
 
-  <!-- The confetti's canvas. Fixed over the whole viewport and outside
-       <main>, because the burst is thrown from the screen's edges, not
-       from the exhibit's box — cannons firing from off-screen left and
-       right need the paper's full width to cross. pointer-events: none
-       in the stylesheet keeps it from swallowing clicks on the way. -->
+  <!-- The celebration's canvas, shared by all three of them. Fixed over
+       the whole viewport and outside <main>, because none of them is
+       thrown from the exhibit's box: the confetti fires two cannons in
+       from off-screen left and right, and the fireworks and the balloons
+       both come up from below the floor. Each needs the paper's full
+       width and height to cross. pointer-events: none in the stylesheet
+       keeps it from swallowing clicks on the way. -->
   <canvas class="cd-fx" aria-hidden="true"></canvas>
 
   <main class="cd-stage">
