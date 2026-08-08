@@ -1115,12 +1115,14 @@
   const themesRow = document.querySelector(".cd-themes");
   const themeInputs = Array.from(document.querySelectorAll(".cd-theme-input"));
 
+  const markEl = document.querySelector(".cd-mark");
+
   /* Parks the row's rule under the chosen word.
 
      The three words are three different widths, and CSS cannot measure a
-     word — so the rule's position is handed over as two custom
-     properties and drawn by styles.css. Everything about how it LOOKS
-     lives there; this only says where the word is.
+     word — so this measures and writes the bar's position and length
+     straight onto it. Everything about how it LOOKS lives in styles.css;
+     this only says where the word is and how much of it to underline.
 
      Without this the fallback under each label still marks the choice, so
      nothing here is load-bearing for the state being visible. What it
@@ -1147,15 +1149,35 @@
        pixels: half a pixel is enough to leave the rule visibly wider than
        the word it belongs to on a screen dense enough to draw the
        difference. Both are read against the row, since that is what the
-       rule is positioned inside.
-
-       --cd-mark-w is a scale, not a length, so it goes over unitless: the
-       rule is a 1px seed stretched to the word's width. */
+       rule is positioned inside. */
     const word = label.getBoundingClientRect();
     const row = themesRow.getBoundingClientRect();
 
-    themesRow.style.setProperty("--cd-mark-x", `${word.left - row.left + padLeft}px`);
-    themesRow.style.setProperty("--cd-mark-w", `${word.width - padLeft - padRight}`);
+    const left = word.left - row.left + padLeft;
+    const width = word.width - padLeft - padRight;
+
+    /* HOW MUCH of the word the rule covers, and which end it hangs from.
+
+       The first word keeps its left half, the last keeps its right, and
+       anything in between is underlined whole. So the mark doesn't just
+       travel — it opens as it leaves an end and closes as it reaches the
+       other, and at rest it always leans toward the outside of the row.
+       Three identical rules taking turns would say only "this one"; this
+       says where in the row you are.
+
+       Read off the word's POSITION rather than its name, so the shape is
+       a property of the row rather than a list of three special cases to
+       keep in step with the markup. */
+    const at = themeInputs.indexOf(checked);
+    const outer = at === 0 || at === themeInputs.length - 1;
+
+    const markW = outer ? width / 2 : width;
+    /* The last word's half hangs off the RIGHT end, so it starts where
+       its half begins rather than at the word's left edge. */
+    const markX = at === themeInputs.length - 1 ? left + width - markW : left;
+
+    markEl.style.width = `${markW}px`;
+    markEl.style.transform = `translateX(${markX}px)`;
     themesRow.classList.add("is-marked");
   }
 

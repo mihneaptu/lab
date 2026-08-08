@@ -391,30 +391,50 @@ body.is-replaying .cd-themes {
   opacity: 1;
 }
 
-/* The travelling mark: ONE rule for the whole row, parked under whichever
+/* And the same shape the travelling mark takes: half a rule on the outer
+   two words, hanging off the outside. 50% of the label's padding box is
+   the word's midpoint, because the padding is even — so these land on
+   exactly the halves markTheme() computes, and the handover from one to
+   the other cannot show as a jump. */
+.cd-theme-input:first-of-type:checked + .cd-theme-label::after {
+  right: 50%;
+}
+
+.cd-theme-input:last-of-type:checked + .cd-theme-label::after {
+  left: 50%;
+}
+
+/* The travelling mark: ONE bar for the whole row, parked under whichever
    word is chosen and sliding across when another is picked. Choosing a
    celebration is a change of mind, not two unrelated events, and a rule
    that travels says so where a pair of crossfading underlines cannot.
 
-   script.js measures the chosen word and hands its position over in
-   --cd-mark-x / --cd-mark-w, adding .is-marked once it has. The width
-   arrives as a scale on a 1px seed rather than as a width, so the whole
-   move is one transform the compositor can carry, and so the hairline
-   stays exactly one pixel tall at any length. */
-.cd-themes::after {
-  content: "";
+   A real element, not a ::after fed by custom properties, and that is the
+   whole point of it. Two earlier versions kept the bar on a pseudo-element
+   and handed its position over in --cd-mark-x / --cd-mark-w: as a scaleX
+   inside a transitioned transform the length froze at the first value
+   measured, so every word wore the first word's rule; rewritten as a width
+   it updated but arrived in one step. Registering both with @property so
+   they would interpolate did not help either — the computed value simply
+   stayed on the old one.
+
+   All three failures come from asking a transition to interpolate
+   something reached through a var(). An ordinary width and transform on an
+   ordinary element have none of that trouble, and script.js can set them
+   directly. The bar is absolutely positioned, so it takes no part in the
+   row's flex layout, and aria-hidden in the markup keeps a decorative span
+   out of the radiogroup a screen reader reads. */
+.cd-mark {
   position: absolute;
   top: calc(100% + var(--cd-mark-gap));
   left: 0;
-  width: 1px;
+  width: 0;
   height: 1px;
   background: var(--line-strong);
-  transform-origin: 0 0;
-  transform: translateX(var(--cd-mark-x, 0)) scaleX(var(--cd-mark-w, 0));
   opacity: 0; /* nothing to show until it has been measured */
 }
 
-.cd-themes.is-marked::after {
+.cd-themes.is-marked .cd-mark {
   opacity: 1;
 }
 
@@ -428,9 +448,14 @@ body.is-replaying .cd-themes {
    face it will actually be drawn in. Before that, a change of position is
    a correction rather than a choice, and nobody should watch it cross the
    row on load. base.css floors this to nothing under reduced motion,
-   which leaves the mark simply appearing where it belongs. */
-.cd-themes.mark-moves::after {
-  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+   which leaves the mark simply appearing where it belongs.
+
+   Both ends on the same clock and the same ease: the left edge is carried
+   by the transform, the right by the width, and they have to arrive
+   together or the bar visibly stretches before it lands. */
+.cd-themes.mark-moves .cd-mark {
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+              width 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* The input is off screen, so its focus ring has to be drawn by the

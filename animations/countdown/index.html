@@ -187,6 +187,12 @@
       <input class="cd-theme-input visually-hidden" type="radio" name="cd-theme"
              id="cd-theme-launch" value="launch">
       <label class="cd-theme-label" for="cd-theme-launch">launch</label>
+      <!-- The rule that slides between the words. Decorative, and hidden
+           from the accessibility tree so the radiogroup a screen reader
+           reads holds three radios and nothing else — which word is chosen
+           is already carried by the radio's own state. script.js measures
+           and positions it; styles.css says what it looks like. -->
+      <span class="cd-mark" aria-hidden="true"></span>
     </p>
   </main>
 
