@@ -24,13 +24,13 @@
 
   <style>
     :root {
-      --paper: #f4f4f3;           /* page background */
-      --surface: #ffffff;         /* the track */
-      --ink: #1a1a1a;
-      --ink-muted: #6b6b6b;       /* unselected labels */
-      --line: #e4e4e2;            /* the track's hairline border */
-      --accent: #262626;          /* the thumb */
-      --accent-contrast: #ffffff; /* the label riding the thumb */
+      --paper: oklch(0.967 0.005 85);           /* page background */
+      --surface: oklch(0.99 0.005 85);         /* the track */
+      --ink: oklch(0.218 0.006 85);
+      --ink-muted: oklch(0.528 0.007 85);       /* unselected labels */
+      --line: oklch(0.918 0.006 85);            /* the track's hairline border */
+      --accent: oklch(0.269 0.006 85);          /* the thumb */
+      --accent-contrast: oklch(0.99 0.005 85); /* the label riding the thumb */
       --radius-md: 10px;
       --radius-sm: 6px;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -46,6 +46,10 @@
       display: grid;
       place-items: center;
       background: var(--paper);
+      /* Paired with the background on purpose. Without it, any text added
+         to this snippet inherits the browser's own default black, which is
+         the one cold pure-neutral the palette above exists to avoid. */
+      color: var(--ink);
     }
 
     /* --- The control ------------------------------------------------------ */

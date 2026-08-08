@@ -33,12 +33,12 @@
     :root {
       color-scheme: light;
 
-      --paper: #f4f4f3;
-      --surface: #ffffff;
-      --ink: #1a1a1a;
-      --ink-muted: #6b6b6b;
-      --line: #e4e4e2;
-      --accent: #262626; /* the focus ring */
+      --paper: oklch(0.967 0.005 85);
+      --surface: oklch(0.99 0.005 85);
+      --ink: oklch(0.218 0.006 85);
+      --ink-muted: oklch(0.528 0.007 85);
+      --line: oklch(0.918 0.006 85);
+      --accent: oklch(0.269 0.006 85); /* the focus ring */
 
       /* Both themes' shadows exist at once, as FIXED aliases that never
          flip: the button wears the light one permanently and fades the
@@ -67,12 +67,12 @@
     [data-theme="dark"] {
       color-scheme: dark;
 
-      --paper: #121212;
-      --surface: #1c1c1c;
-      --ink: #f2f2f2;
-      --ink-muted: #a3a3a3;
-      --line: #2a2a2a;
-      --accent: #ececec;
+      --paper: oklch(0.182 0.006 85);
+      --surface: oklch(0.226 0.006 85);
+      --ink: oklch(0.961 0.005 85);
+      --ink-muted: oklch(0.715 0.007 85);
+      --line: oklch(0.285 0.008 85);
+      --accent: oklch(0.943 0.006 85);
     }
 
     body {
@@ -82,6 +82,11 @@
       display: grid;
       place-items: center;
       background: var(--paper);
+      /* Paired with the background on purpose. Without it, any text added
+         to this snippet inherits the browser's own default black (or white
+         under color-scheme: dark), which is the one cold pure-neutral the
+         palette above exists to avoid. */
+      color: var(--ink);
       /* The sky doesn't snap to night — the paper crossfades on the
          morph's own clock, so the world changes WITH the sun, not
          before it. */
