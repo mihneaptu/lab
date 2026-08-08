@@ -1,130 +1,52 @@
-/* The homepage countdown card's numbers.
+/* The homepage countdown card's arrival sentence.
 
-   The card is a live miniature, like the sun-moon card's sky and the
-   segmented control's thumb — but those two are live in the sense that
-   they are the real markup wearing the real styles, which CSS can do
-   alone. A countdown is only itself if it says how long is actually
-   left, and no stylesheet knows the date. So this writes four numbers
-   into the card, once a second.
+   The card is a miniature of the countdown exhibit, and everything it
+   DOES on hover — the digits lifting away, the message rising behind
+   them — is CSS, in index.html's own style block. This file has no
+   opinion about any of it.
 
-   Everything the card DOES on hover — the digits lifting away, the
-   message rising behind them — is CSS, in index.html's own style block.
-   This file has no opinion about any of it.
+   It used to write four live numbers into the card as well, because the
+   exhibit was a real countdown and a countdown is only itself if it says
+   how long is actually left. The exhibit isn't one any more: it runs a
+   few seconds and hands off. So the card's clock is four zeros in the
+   markup — the moment the handoff fires from, which is exactly the frame
+   the hover animates out of — and no script is needed to hold it there.
 
-   What it counts to is what the exhibit counts to: the next 1st of
-   January, at local midnight. The rule is duplicated here rather than
-   read out of storage, because there is nothing in storage to read — the
-   exhibit counts to one fixed date now, not to a target the visitor sets.
-   With no build step there is nowhere shared to put the rule, and a card
-   quietly disagreeing with the page it links to is the mismatch a visitor
-   would actually notice. Keep the two in step by hand; nextNewYear() in
-   animations/countdown/script.js is the original. */
+   What is left is one string. The exhibit lands on a different sentence
+   depending on which occasion is armed, and that choice is remembered
+   between visits, so a card asserting "Happy new year!" while the page it
+   links to says "Happy birthday!" would be a mismatch a visitor notices —
+   the card's hover plays the very handoff the exhibit lands with.
+
+   The three sentences are duplicated from the exhibit's THEMES table
+   because with no build step there is nowhere shared to put them. Keep
+   them in step by hand; animations/countdown/script.js is the original. */
 (() => {
-  const clock = document.querySelector(".cd-mini-clock");
-  if (!clock) return; /* every page but the homepage */
+  const messageEl = document.querySelector(".cd-mini-message");
+  if (!messageEl) return; /* every page but the homepage */
 
-  /* The exhibit's one stored setting. The read is wrapped because storage
-     access can throw outright in a locked-down profile, not merely come
-     back empty — and a card is nobody's reason to take the homepage
-     down. */
   const KEY_THEME = "countdown:theme";
 
-  /* The exhibit's three arrival sentences, by occasion. Duplicated from
-     its THEMES table for the same reason the date is, and with the same
-     obligation: leaving the card asserting one sentence while the exhibit
-     uses another would show, since the card's hover plays the very
-     handoff the exhibit lands with. */
   const MESSAGES = {
     birthday: "Happy birthday!",
     newyear: "Happy new year!",
     launch: "It's live!",
   };
 
-  function storedTheme() {
-    let raw = null;
-    try {
-      raw = localStorage.getItem(KEY_THEME);
-    } catch {
-      return "newyear";
-    }
-    return MESSAGES[raw] ? raw : "newyear";
+  /* The read is wrapped because storage access can throw outright in a
+     locked-down profile, not merely come back empty — and a card is
+     nobody's reason to take the homepage down. An unrecognised value
+     falls back the same way the exhibit's own does. */
+  let saved = null;
+  try {
+    saved = localStorage.getItem(KEY_THEME);
+  } catch {
+    return; /* the markup's default stands */
   }
 
-  /* Local midnight on the next 1st of January — which on January 1st is
-     today, not a year away. Built from parts rather than parsed from a
-     string: `new Date("2027-01-01")` parses as UTC and would put the card
-     an hour or two out of step with the exhibit it links to, for anyone
-     not on Greenwich. */
-  function nextNewYear() {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const jan1 = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-    return jan1 >= today ? jan1 : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
-  }
-
-  const nums = {};
-  clock.querySelectorAll("[data-unit]").forEach((el) => {
-    nums[el.dataset.unit] = el;
-  });
-
-  const pad = (n) => String(n).padStart(2, "0");
-
-  function write(d, h, m, s) {
-    nums.d.textContent = d;
-    nums.h.textContent = pad(h);
-    nums.m.textContent = pad(m);
-    nums.s.textContent = pad(s);
-  }
-
-  /* Read once, like the exhibit's, so a tab left open across the turn of
-     the year runs the card down to zero rather than rolling it on to the
-     January after. */
-  const target = nextNewYear();
-
-  function tick() {
-    const total = Math.max(0, Math.floor((target - Date.now()) / 1000));
-    write(
-      Math.floor(total / 86400),
-      Math.floor(total / 3600) % 24,
-      Math.floor(total / 60) % 60,
-      total % 60
-    );
-  }
-
-  /* Aligned to the wall clock rather than run on a plain interval, for
-     the same reason the exhibit is: a 1000ms interval drifts against the
-     second it is displaying, and the seconds digit starts repeating or
-     skipping values. Landing a moment past each boundary guarantees the
-     value has rolled over by the time it is read. */
-  let timer = null;
-
-  function schedule() {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      tick();
-      schedule();
-    }, 1000 - (Date.now() % 1000) + 25);
-  }
-
-  /* Nothing to count while nobody is looking. A hidden tab would have
-     its timer throttled to a crawl anyway and come back showing a stale
-     number, so the card stops and re-reads the clock on return. */
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      clearTimeout(timer);
-      return;
-    }
-    tick();
-    schedule();
-  });
-
-  /* Written once at load rather than every tick: the theme can only
-     change on the exhibit's own page, and coming back here is a
-     navigation, which re-runs this. The markup carries the default as
-     its no-JS fallback, so this only ever has to correct it. */
-  const messageEl = document.querySelector(".cd-mini-message");
-  if (messageEl) messageEl.textContent = MESSAGES[storedTheme()];
-
-  tick();
-  schedule();
+  /* Written once, at load. The occasion can only be changed on the
+     exhibit's own page, and coming back here is a navigation, which runs
+     this again. The markup carries the default as its no-JS fallback, so
+     this only ever has to correct it. */
+  if (MESSAGES[saved]) messageEl.textContent = MESSAGES[saved];
 })();

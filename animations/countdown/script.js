@@ -18,9 +18,9 @@
 (() => {
   "use strict";
 
-  /* --- What this counts to, and what happens when it gets there ---------
+  /* --- What an arrival looks like, and what it means ---------------------
 
-     Two tables and a date.
+     Two tables.
 
      CELEBRATIONS is what an arrival can LOOK like. Each one is the same
      two things — the show it throws on landing, and what a click on the
@@ -35,15 +35,19 @@
      celebration it points at. Which one is armed is the visitor's single
      choice on this page, and it is remembered between visits.
 
-     For a while both a date field and a message field lived under the
-     stage, so the countdown could be pointed at the visitor's own day.
-     They are gone. This is an animation exhibit, and a date picker is
-     configuration — the same two facts are the first lines of code.html,
-     where anyone who wants their own countdown is already going. What
-     cannot be got from reading the source is watching the three endings
-     play, so that is what the page keeps.
+     What this page is NOT, and used to be: a countdown to a real date.
+     It counted four months down to an anniversary, and later to a day the
+     visitor set in a field under the stage. Both are gone, and with them
+     the date line, the stored target, and the fields.
 
-     Which leaves one date for all three, below. */
+     The reason is that the exhibit is the HANDOFF — the digits lifting
+     away in sequence, the frame fading behind them, the message rising
+     into the space — and a real countdown shows that once a year and
+     shows its own waiting the rest of the time. So the clock runs a few
+     seconds, hands off, and rests on the arrival until you ask for it
+     again. Anyone who wants a countdown to their own date copies the
+     code, where the month, the day and the sentence are the first three
+     constants in the file. */
   const CELEBRATIONS = {
     /* Paper thrown in a room: two cannons from the edges, then a long
        thin fall. */
@@ -97,25 +101,6 @@
 
   const DEFAULT_THEME = "newyear";
 
-  /* The next January 1st, at local midnight.
-
-     One date, shared by all three occasions. A birthday and a launch are
-     whenever yours is, so neither has a date anyone else could name —
-     and New Year's is the one occasion that does, always real, always
-     ahead, and needing nothing from the visitor. The page counts to it
-     and says so under the clock; the words below choose what happens
-     when it lands.
-
-     On January 1st it is TODAY, not a year away. Blindly adding a year
-     would make this the one day of the year the exhibit refuses to
-     celebrate. */
-  function nextNewYear() {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const jan1 = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-    return jan1 >= today ? jan1 : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
-  }
-
   /* The celebration the armed theme points at. One lookup, in one place,
      so nothing downstream has to know that a theme names its animation
      rather than owning it. */
@@ -166,7 +151,6 @@
   const body = document.body;
   const face = document.querySelector(".cd-face");
   const stacks = Array.from(document.querySelectorAll(".cd-stack"));
-  const dateEl = document.querySelector(".cd-date");
   const messageEl = document.querySelector(".cd-message");
   const readingEl = document.querySelector(".cd-reading");
   const replayEl = document.querySelector(".cd-replay");
@@ -174,11 +158,6 @@
   document.querySelectorAll(".cd-num").forEach((el) => {
     nums[el.dataset.unit] = el;
   });
-
-  /* What the page is counting to. Read once, at load: a tab left open
-     across the turn of the year counts down to zero and celebrates,
-     which is the right answer and the one the exhibit exists for. */
-  const target = nextNewYear();
 
   /* Which of the three occasions is armed. Always a valid key: a
      hand-edited or unrecognised stored value falls back rather than
@@ -216,40 +195,19 @@
     }, ms);
   }
 
-  /* --- Where the count is ---------------------------------------------- */
+  /* --- Where the count is ----------------------------------------------
 
-  /* Non-null only while a replay is running: a target a few seconds out
-     that stands in for the real one. Everything downstream reads the
-     state through one function, so the demo and the real thing are the
-     same countdown and cannot drift apart in behaviour. */
-  let demoTarget = null;
+     A few seconds out, set when the run starts and reset every time it is
+     started again. This is the whole clock now: the exhibit is the
+     HANDOFF, and the count is the run-up that gives the digits something
+     to be doing before they leave.
 
-  /* Is there a live countdown to be at, or to go back to? Asked of the
-     real target only, never of the demo — the replay button needs to
-     know whether returning is a thing it can honestly offer, and on the
-     day itself it isn't. */
-  function realIsLive() {
-    return Date.now() < +target;
-  }
-
-  /* Two states, in priority order.
-
-     A rehearsal outranks everything: it is the visitor asking to see the
-     handoff now, over whatever the page was otherwise doing.
-
-     Then the real countdown, live until the year turns and finished
-     after. */
-  function state() {
-    if (demoTarget !== null) {
-      return Date.now() >= demoTarget
-        ? { done: true }
-        : { done: false, target: new Date(demoTarget), demo: true };
-    }
-
-    return realIsLive()
-      ? { done: false, target, demo: false }
-      : { done: true };
-  }
+     There used to be a real target behind it — an anniversary, and later
+     a date the visitor set — with this standing in only while the replay
+     button was rehearsing. Both are gone. A page that counts four months
+     down to somebody else's date shows its animation once a year and its
+     wait the rest of the time, and the wait is not the exhibit. */
+  let countTo = 0;
 
   /* --- The confetti ---------------------------------------------------- */
 
@@ -910,9 +868,9 @@
     }
   }
 
-  /* On the day itself, a click anywhere is worth a little more of it —
-     in whichever currency the theme deals in: a handful of paper thrown
-     from the cursor, or another shell sent up from it. */
+  /* Once it has landed, a click anywhere is worth a little more of it —
+     in whichever currency the occasion deals in: a handful of paper
+     thrown from the cursor, or another shell sent up from it. */
   addEventListener("pointerdown", (e) => {
     if (!body.classList.contains("is-done") || calm.matches) return;
     /* Primary button only. pointerdown fires for every button on the
@@ -932,10 +890,6 @@
 
   let done = false;
 
-  /* True until the first reading of the clock has been acted on. It only
-     ever matters when that first reading is already past the target. */
-  let firstPass = true;
-
   /* Every animation the handoff starts, kept by hand.
 
      element.getAnimations() is NOT a reliable way to find these again.
@@ -950,17 +904,15 @@
      question of what that list chooses to report. */
   let handoffAnims = [];
 
-  /* fromLoad: a page that opens already past its target has nothing to
-     hand off FROM — the digits it would lift away never showed a count.
-     So it skips the choreography and simply arrives, after a beat long
-     enough for the first paint to land before the confetti does. */
-  function celebrate(fromLoad) {
+  function celebrate() {
     if (done) return;
     done = true;
-    updateReplay();
 
-    if (calm.matches || fromLoad) {
-      later(finish, fromLoad ? 420 : 0);
+    /* Nothing to choreograph for someone who asked not to be moved: the
+       stage simply arrives, and the stylesheet's .is-done rules put it
+       there without a transition to watch. */
+    if (calm.matches) {
+      finish();
       return;
     }
 
@@ -1006,14 +958,10 @@
   function finish() {
     body.classList.remove("is-final");
     body.classList.add("is-done");
-    /* Written at arrival rather than once at load: the sentence is the
-       visitor's now, and it can have changed since the last handoff. */
+    /* Written at arrival rather than once at load: the occasion can have
+       been changed since the last handoff, and with it the sentence. */
     messageEl.textContent = messageText();
     announce(messageText());
-    /* The label is rewritten while the button is still invisible, so the
-       word swap happens under cover and what fades back in is already
-       offering the right thing. */
-    updateReplay();
 
     /* The control comes back once the message has finished arriving —
        its rise runs 900ms — rather than at the same instant, so the two
@@ -1028,7 +976,7 @@
     celebration().show();
   }
 
-  /* Back to a live countdown from wherever the handoff had got to.
+  /* Back to the top of the count from wherever the handoff had got to.
 
      The order is the point. Bumping the run token first strands every
      pending step; cancelling the animations BEFORE the class comes off
@@ -1049,17 +997,14 @@
 
   /* --- The count -------------------------------------------------------- */
 
-  let shownDate = null;
-
   function pad(n) {
     return String(n).padStart(2, "0");
   }
 
-  /* Coarse and polite on purpose. A live region re-read once a second
-     talks over everything else a visitor is doing, and "forty-one
-     seconds" is not the part of a four-month countdown anyone needs
-     announced — so this speaks in minutes, only when the minute
-     changes. */
+  /* Said only when it changes, which for a count this short is once a
+     second — and that is fine here, where the whole reading is four words
+     and the count is over in four of them. The guard is what keeps the
+     arrival sentence from being re-read on every tick after it lands. */
   let lastAnnounced = null;
 
   function announce(text) {
@@ -1073,57 +1018,36 @@
   }
 
   function tick() {
-    const st = state();
-
-    if (st.done) {
-      celebrate(firstPass);
-      firstPass = false;
+    /* Against the clock, not against the displayed value. Zero is a real
+       second the count spends showing "00", not an instant it passes
+       through — so the handoff has to wait for the target to actually go
+       by, and asking whether the READING has hit zero would fire it a
+       second early, off a clock still showing digits. */
+    if (Date.now() >= countTo) {
+      celebrate();
       return;
     }
 
-    /* The count is live again — either the demo was sent back, or the
-       page was left open across the far side of the target. */
+    /* The count is running again, over an arrival that was on screen. */
     if (done) reset();
-    firstPass = false;
 
-    const stamp = +st.target;
-    if (shownDate !== stamp) {
-      shownDate = stamp;
-      /* Blank during a rehearsal. The real date would be a lie under a
-         seven-second count, and naming the rehearsal as one only says
-         what four zeros and a single digit have already said. The line
-         keeps its height in the stylesheet, so going quiet here doesn't
-         drag the replay button up the page and drop it back. */
-      dateEl.textContent = st.demo
-        ? ""
-        : st.target.toLocaleDateString(undefined, {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
-    }
+    const total = Math.max(0, Math.floor((countTo - Date.now()) / 1000));
 
-    const total = Math.max(0, Math.floor((stamp - Date.now()) / 1000));
-    const days = Math.floor(total / 86400);
-    const hours = Math.floor(total / 3600) % 24;
-    const mins = Math.floor(total / 60) % 60;
-    const secs = total % 60;
+    /* Four units for a count that never leaves the last minute, and they
+       stay. Three of them reading zero is what makes the fourth read as
+       the one that matters — and they are the four cells the handoff
+       lifts away in sequence, which is the animation this page is for. */
+    nums.d.textContent = 0;
+    nums.h.textContent = pad(0);
+    nums.m.textContent = pad(0);
+    nums.s.textContent = pad(total);
 
-    nums.d.textContent = days;
-    nums.h.textContent = pad(hours);
-    nums.m.textContent = pad(mins);
-    nums.s.textContent = pad(secs);
+    announce(`${plural(total, "second")} remaining.`);
 
-    announce(
-      total < 60
-        ? `${plural(total, "second")} remaining.`
-        : `${plural(days, "day")}, ${plural(hours, "hour")} and ` +
-          `${plural(mins, "minute")} remaining.`
-    );
-
-    body.classList.toggle("is-final", total <= 60);
-    updateReplay();
+    /* Always, now: the count is only ever seconds long, so the last
+       minute is the whole of it. The dimming it turns on is part of the
+       look rather than a stage the count passes through. */
+    body.classList.add("is-final");
 
     /* The last ten seconds: the one number still moving gets a pulse per
        tick. No fill — it returns to rest on its own, so nothing has to
@@ -1161,53 +1085,30 @@
 
   /* --- The replay control ----------------------------------------------- */
 
-  /* The button offers whichever of its two jobs makes sense from here.
-     "Back to the countdown" is only honest while there IS one to go back
-     to — on the day itself the count has run out, the celebration is the
-     real state, and the button goes back to offering the replay rather
-     than promising a countdown that no longer exists. */
-  function canReturn() {
-    return done && realIsLive();
-  }
+  /* Take it from the top: a fresh count a few seconds out, running into
+     the handoff.
 
-  function updateReplay() {
-    const label = canReturn() ? "back to the countdown" : "replay the handoff";
-    if (replayEl.textContent !== label) replayEl.textContent = label;
-  }
-
-  /* Put the page into a state and start the clock again. `demo` true
-     stages a rehearsal a few seconds out; false hands the page back to
-     whatever state() says the real situation is.
-
-     Both of the replay button's two jobs are this one function, so the
-     rehearsal and the return can never drift apart in what they do to the
-     page. */
-  function restart(demo) {
-    demoTarget = demo ? Date.now() + DEMO_SECONDS * 1000 : null;
+     One function, called by the button and by the page's own opening
+     move, so what the exhibit does on arrival and what it does on demand
+     cannot drift apart. */
+  function play() {
+    countTo = Date.now() + DEMO_SECONDS * 1000;
 
     reset();
-    shownDate = null;   /* the date line has to be re-decided */
     lastAnnounced = null;
-    firstPass = false;  /* a rehearsal is never a page load: it plays the
-                           full choreography, which is the entire point.
-                           This is the difference between the handoff
-                           ANIMATING and the page simply arriving already
-                           finished — see celebrate()'s fromLoad. */
 
-    /* Only a rehearsal takes the control off screen, and only AFTER
+    /* The control steps off screen for the duration, and only AFTER
        reset() — which clears the flag along with everything else, so
-       setting it first would immediately undo it. Going back to the
-       countdown is a state change, not a performance: the button stays
-       put and simply relabels. */
-    if (demo) body.classList.add("is-replaying");
+       setting it first would immediately undo it. It has nothing to offer
+       while the thing it starts is playing, and finish() hands it back a
+       beat after the message lands. */
+    body.classList.add("is-replaying");
 
     tick();
     scheduleTick();
   }
 
-  replayEl.addEventListener("click", () => {
-    restart(!canReturn());
-  });
+  replayEl.addEventListener("click", play);
 
   /* --- The occasion ------------------------------------------------------ */
 
@@ -1385,7 +1286,6 @@
   readPalette();
   layout();
   applyTheme(readStored(KEY_THEME));
-  updateReplay();
 
   /* applyTheme has already put the rule under the chosen word. This is
      what lets it MOVE from there — held back until two things are true,
@@ -1405,12 +1305,9 @@
     requestAnimationFrame(() => themesRow.classList.add("mark-moves"));
   });
 
-  /* And the page opens on the countdown itself, not on its ending. The
-     handoff is what the replay button is FOR, and a visitor who arrives
-     to a celebration already in progress has been shown the punchline
-     before the setup — the dimmed units and the pulsing seconds of the
-     last minute are part of the exhibit too, and the button plays the
-     whole arc on demand. */
-  tick();
-  scheduleTick();
+  /* And it plays, straight away. The exhibit is a handoff that takes six
+     seconds end to end, so there is nothing to be gained by making a
+     visitor ask for it first — they came to see it move. It runs the same
+     way the button runs it, and rests on the arrival afterwards. */
+  play();
 })();

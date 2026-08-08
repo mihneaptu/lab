@@ -369,13 +369,12 @@
       }
     }
 
-    /* The countdown card's miniature: the exhibit's own frame, shrunk,
-       with the real remaining time in it (scripts/countdown-card.js
-       writes the numbers). Hovering plays the handoff the card is named
-       for — the digits lift away one cell after another and the message
-       rises into the space they leave, on the exhibit's own stagger and
-       eases. Like the sun-moon card, it performs the very effect it
-       promises rather than showing a still of it. */
+    /* The countdown card's miniature: the exhibit's own clock, shrunk,
+       parked at zero. Hovering plays the handoff the card is named for —
+       the digits lift away one cell after another and the message rises
+       into the space they leave, on the exhibit's own stagger and eases.
+       Like the sun-moon card, it performs the very effect it promises
+       rather than showing a still of it. */
     .cd-mini {
       display: grid;
       justify-items: center;
@@ -680,23 +679,25 @@
 
         <a class="component-card" href="animations/countdown/index.html">
           <div class="card-preview" aria-hidden="true">
-            <!-- A live miniature of the specimen: the exhibit's frame at
-                 card size, with the real time left in it — the numbers
-                 come from scripts/countdown-card.js. The styles, and the
-                 hover handoff they play, live in the block above. -->
+            <!-- A miniature of the specimen: the exhibit's clock at card
+                 size, parked at the moment the handoff fires from. The
+                 numbers are written here rather than counted by script,
+                 because the exhibit itself no longer counts to anything —
+                 it runs a few seconds and hands off, so four zeros are
+                 what its clock actually reads at the instant this card's
+                 hover is a picture of. The styles, and the hover handoff
+                 they play, live in the block above. -->
             <span class="cd-mini">
               <span class="cd-mini-clock">
-                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="d">--</span><span class="cd-mini-name">d</span></span></span>
-                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="h">--</span><span class="cd-mini-name">h</span></span></span>
-                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="m">--</span><span class="cd-mini-name">m</span></span></span>
-                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num" data-unit="s">--</span><span class="cd-mini-name">s</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num">0</span><span class="cd-mini-name">d</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num">00</span><span class="cd-mini-name">h</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num">00</span><span class="cd-mini-name">m</span></span></span>
+                <span class="cd-mini-unit"><span class="cd-mini-stack"><span class="cd-mini-num">00</span><span class="cd-mini-name">s</span></span></span>
               </span>
-              <!-- The default theme's sentence, as the no-JS fallback;
-                   countdown-card.js corrects it to whichever theme is
-                   stored. Not a live read of whatever the visitor typed
-                   into the message field: the card is a miniature of what
-                   the exhibit DOES, and this is the one line of it that
-                   has to hold still while the card is 108px tall. -->
+              <!-- The default occasion's sentence, as the no-JS fallback;
+                   countdown-card.js corrects it to whichever occasion is
+                   stored, so the card promises the ending the exhibit
+                   will actually play. -->
               <span class="cd-mini-message">Happy new year!</span>
             </span>
           </div>

@@ -109,10 +109,11 @@
          keep in step with the type. And a visibility/opacity swap can be
          animated, where a display swap can only ever snap. -->
     <div class="cd-slot">
-      <!-- The countdown's whole face: the frame and the date it names.
-           Grouped because the handoff fades them together as one object
-           after the digits have left — the date belongs to the count, so
-           it goes when the count does. -->
+      <!-- The countdown's face. Kept as a box of its own around the clock
+           rather than folded into it, because the handoff runs on two
+           clocks: the digits inside lift away one cell after another,
+           and THIS is what fades a beat later, once they have gone. Two
+           timelines need two elements. -->
       <div class="cd-face">
         <!-- One grid, four cells, hairline gaps showing the frame's color
              through — so the "borders" between units are the container
@@ -130,34 +131,26 @@
              numbers once a second is unusable, and "07" on its own means
              nothing anyway. -->
         <div class="cd-clock" aria-hidden="true">
-          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="d">--</div><div class="cd-name">Days</div></div></div>
-          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="h">--</div><div class="cd-name">Hours</div></div></div>
-          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="m">--</div><div class="cd-name">Minutes</div></div></div>
-          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="s">--</div><div class="cd-name">Seconds</div></div></div>
+          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="d">0</div><div class="cd-name">Days</div></div></div>
+          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="h">00</div><div class="cd-name">Hours</div></div></div>
+          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="m">00</div><div class="cd-name">Minutes</div></div></div>
+          <div class="cd-unit"><div class="cd-stack"><div class="cd-num" data-unit="s">00</div><div class="cd-name">Seconds</div></div></div>
         </div>
-
-        <p class="cd-date"></p>
       </div>
 
-      <!-- Written by script.js at the moment of arrival, from whatever is
-           in the message field below (or its fallback). Not filled at load
-           because the sentence is the visitor's and can change between one
-           handoff and the next. -->
+      <!-- Written by script.js at the moment of arrival, from the chosen
+           occasion's sentence. Not filled at load, because that choice
+           can change between one handoff and the next. -->
       <p class="cd-message"></p>
     </div>
 
-    <!-- The countdown, in words, for anyone not reading the grid. Polite
-         and coarse on purpose: it's refreshed about once a minute, not
-         once a second, so it reports where the count is without talking
-         over everything else a visitor is doing. -->
+    <!-- The count, in words, for anyone not reading the grid. -->
     <p class="cd-reading visually-hidden" role="status"></p>
 
-    <!-- The exhibit's payoff fires once a year, which is no way to show
-         an animation. This runs it on demand. Its label says which of
-         the two things it will do, so the button is never a mystery box:
-         "replay the handoff" from the countdown, "back to the countdown"
-         once the message is up. script.js owns the wording. -->
-    <button class="cd-replay" type="button"></button>
+    <!-- The exhibit plays itself once on arrival and then rests on the
+         ending. This is how you see it again. It says plainly what it
+         does, so the button is never a mystery box. -->
+    <button class="cd-replay" type="button">replay the handoff</button>
 
     <!-- Which occasion the arrival is for: it decides the celebration
          thrown and the sentence landed on, and nothing else. Three words,

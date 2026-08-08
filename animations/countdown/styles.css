@@ -19,9 +19,8 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  /* Wider than the gap holding the date to the clock above it, so the
-     two groups read as two: the readout and its date, then the control.
-     See the note on .cd-date. */
+  /* Wide enough that the readout and the two controls under it read as
+     two groups rather than one stack of four lines. */
   gap: var(--space-7);
   padding: var(--space-8) var(--space-5) var(--space-6);
 }
@@ -152,29 +151,6 @@ body.fx-behind .cd-fx {
    theme's paper lies, so this needs no dark-theme counterpart. */
 body.is-final .cd-unit:not(:last-child) .cd-num {
   color: color-mix(in srgb, var(--ink) 32%, var(--paper));
-}
-
-/* The line keeps its height even when it has nothing to say, which is
-   the case during a rehearsal: an empty <p> collapses to zero, and this
-   one sits inside the face that decides how tall the slot is — so
-   letting it collapse would pull the replay button up the page on every
-   replay and drop it back afterwards. Reserving one line costs nothing
-   and holds the layout still. */
-.cd-date {
-  /* This line belongs to the clock, and spacing is the only thing left
-     saying so now that no frame encloses them together. So it stays
-     nearer the labels than the replay button below it is to the date —
-     the stage's own gap is a step wider for exactly that reason. Get the
-     two the wrong way round and the date reads as a second caption
-     attached to the button. */
-  margin-top: var(--space-6);
-  min-height: 21px; /* fallback: --text-xs at the body's 1.6 line-height */
-  min-height: 1lh;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--ink-muted);
-  text-align: center;
-  text-wrap: balance;
 }
 
 /* --- The message -------------------------------------------------------- */
