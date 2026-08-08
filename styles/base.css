@@ -563,6 +563,57 @@ a:focus-visible {
   font-size: var(--text-2xs);
 }
 
+/* The two words of the copy link — "copy code" and its confirmation —
+   stacked in a single grid cell by scripts/copy-code.js. One cell means
+   one width, the wider of the two, so the box never resizes when they
+   trade places: the corner holds absolutely still and only the letters
+   move. Both are right-aligned, because the link is pinned to the right
+   edge and whichever word is showing should keep that edge.
+
+   Nothing here applies until the script builds the slot, so a page
+   without JS keeps the plain link it was written as. */
+.copy-code__slot {
+  display: grid;
+  /* the clip that turns a slide into a roll. It lives on the slot and
+     not on the link, because the link also carries the ::after touch
+     halo, and overflow here would crop that halo to nothing. */
+  overflow: hidden;
+}
+
+.copy-code__word {
+  grid-area: 1 / 1;
+  text-align: right;
+  /* Slower than --speed-color, and deliberately: that token times a
+     color settling, which the eye takes in at once. This is a word
+     leaving and a word arriving, and reading both needs the extra
+     beat. Same curve and duration each way, so settling back reads as
+     the same gesture rewound rather than a new one. */
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* At rest the confirmation waits exactly one line below the slot floor,
+   already clipped. No fade on either word: the slot's edge does the
+   hiding, so a word is only ever gone because it has travelled out —
+   for the length of the roll both are half in frame, the way a split
+   flap shows two faces mid-turn. */
+.copy-code__word--done {
+  transform: translateY(100%);
+}
+
+.copy-code.is-copied .copy-code__word--rest {
+  transform: translateY(-100%);
+}
+
+.copy-code.is-copied .copy-code__word--done {
+  transform: translateY(0);
+}
+
+/* The one moment this corner is allowed to speak up — it holds the
+   hover ink through the confirmation, then fades back to muted. */
+.copy-code.is-copied {
+  color: var(--ink);
+}
+
 /* One line of small mono is a ~21px-tall target. The halo brings it to
    ~44px each way; the corners around them are empty, so it overlaps
    nothing. */
